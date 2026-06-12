@@ -5,18 +5,40 @@ export interface FeedItem {
   url: string;
   excerpt: string;
   publishedAt: Date | null;
+  imageUrl: string | null;
 }
 
-const parser = new Parser({
+type RawItem = {
+  mediaDescription?: string;
+  'media:content'?: { $?: { url?: string } };
+  'media:thumbnail'?: { $?: { url?: string } };
+};
+
+const parser = new Parser<Record<string, unknown>, RawItem>({
   timeout: 15000,
   headers: {
     'User-Agent': 'AiSxoliasmos/1.0 RSS Reader (+https://aisxoliasmos.com)',
     Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
   },
   customFields: {
-    item: [['media:description', 'mediaDescription']],
+    item: [
+      ['media:description', 'mediaDescription'],
+      ['media:content', 'media:content'],
+      ['media:thumbnail', 'media:thumbnail'],
+    ],
   },
 });
+
+function extractImageUrl(item: Parser.Item & RawItem): string | null {
+  if (item.enclosure?.url && item.enclosure.type?.startsWith('image/')) {
+    return item.enclosure.url;
+  }
+  const mc = item['media:content'];
+  if (mc?.$?.url) return mc.$.url;
+  const mt = item['media:thumbnail'];
+  if (mt?.$?.url) return mt.$.url;
+  return null;
+}
 
 export async function fetchFeed(url: string): Promise<FeedItem[]> {
   const feed = await parser.parseURL(url);
@@ -24,10 +46,11 @@ export async function fetchFeed(url: string): Promise<FeedItem[]> {
   return feed.items
     .slice(0, 30)
     .map((item) => {
+      const raw = item as Parser.Item & RawItem;
       const excerpt =
         (item.contentSnippet?.trim()) ||
         (item.summary?.trim()) ||
-        ((item as unknown as Record<string, unknown>)['mediaDescription'] as string | undefined)?.trim() ||
+        raw.mediaDescription?.trim() ||
         '';
 
       return {
@@ -39,6 +62,7 @@ export async function fetchFeed(url: string): Promise<FeedItem[]> {
           : item.pubDate
           ? new Date(item.pubDate)
           : null,
+        imageUrl: extractImageUrl(raw),
       };
     })
     .filter((item) => item.title.length > 0 && item.url.length > 0);

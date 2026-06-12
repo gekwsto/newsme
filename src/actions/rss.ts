@@ -46,16 +46,32 @@ async function _scoreAndSave(
   const scores = await scoreArticles(articles);
   const config = getEditorialConfig();
 
+  // Fetch source metadata for GR/EL bonus
+  const articleIds = articles.map((a) => a.id);
+  const sourceMap = new Map<string, { language: string; country: string }>();
+  const discovered = await prisma.discoveredArticle.findMany({
+    where: { id: { in: articleIds } },
+    select: { id: true, source: { select: { language: true, country: true } } },
+  });
+  for (const d of discovered) {
+    sourceMap.set(d.id, { language: d.source.language, country: d.source.country });
+  }
+
   let filtered = 0;
   for (const s of scores) {
+    const src = sourceMap.get(s.id);
+    const isGreek = src?.language === 'EL' || src?.country === 'GR';
+    const bonus = isGreek ? 10 : 0;
+    const facebookBonus = isGreek ? 5 : 0;
+
     const scoreData = {
       viralScore: s.viralScore,
       discussionScore: s.discussionScore,
       businessValueScore: s.businessValueScore,
       searchPotentialScore: s.searchPotentialScore,
       controversyScore: s.controversyScore,
-      facebookDiscussionScore: s.facebookDiscussionScore,
-      overallScore: s.overallScore,
+      facebookDiscussionScore: Math.min(100, s.facebookDiscussionScore + facebookBonus),
+      overallScore: Math.min(100, s.overallScore + bonus),
       whyThisMatters: s.whyThisMatters || null,
       bestFacebookAngle: s.bestFacebookAngle || null,
       reasoning: s.reasoning || null,
@@ -217,6 +233,7 @@ async function _fetchSource(sourceId: string): Promise<{ newCount: number; total
         excerpt: item.excerpt || null,
         publishedAt: item.publishedAt,
         categoryId: source.categoryId,
+        imageUrl: item.imageUrl || null,
       })),
       skipDuplicates: true,
     });
@@ -424,7 +441,7 @@ export async function generateDraftFromDiscoveredArticle(
       where: { id: discoveredId },
       include: {
         category: { select: { id: true, name: true } },
-        source: { select: { name: true } },
+        source: { select: { name: true, language: true, country: true } },
       },
     });
 
@@ -444,12 +461,16 @@ export async function generateDraftFromDiscoveredArticle(
       articleType: 'summary',
       targetLength: 'medium',
       sourceUrl: discovered.url,
+      sourceLanguage: discovered.source.language,
+      sourceCountry: discovered.source.country,
+      sourceName: discovered.source.name,
       generateFacebookPost: true,
       generateAiCommentary: true,
     });
 
     const slug = await uniqueSlug(generated.slug || 'article');
 
+    const hasRssImage = Boolean(discovered.imageUrl);
     const article = await prisma.article.create({
       data: {
         title: generated.title,
@@ -464,6 +485,8 @@ export async function generateDraftFromDiscoveredArticle(
         categoryId: discovered.categoryId,
         authorId: user.id,
         readTime: estimateReadTime(generated.contentHtml),
+        suggestedImageUrl: discovered.imageUrl || null,
+        imageStatus: hasRssImage ? 'RSS_AVAILABLE' : 'NONE',
       },
     });
 
@@ -564,5 +587,89 @@ export async function ignoreDiscoveredArticle(discoveredId: string): Promise<Ign
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
+  }
+}
+
+// ─── Source CRUD ──────────────────────────────────────────────────────────────
+
+type SourceData = {
+  name: string;
+  url: string;
+  categoryId: string;
+  language: string;
+  country: string;
+  reliabilityScore: number;
+  feedSourceType: string;
+  enabled?: boolean;
+};
+
+export type SourceMutationResult = { ok: true; id: string } | { ok: false; error: string };
+
+export async function addRssSource(data: SourceData): Promise<SourceMutationResult> {
+  try {
+    await requireAuth();
+    const source = await prisma.rssSource.create({
+      data: {
+        name: data.name.trim(),
+        url: data.url.trim(),
+        categoryId: data.categoryId,
+        language: data.language,
+        country: data.country,
+        reliabilityScore: data.reliabilityScore,
+        feedSourceType: data.feedSourceType,
+        enabled: data.enabled ?? true,
+      },
+    });
+    revalidatePath('/admin/sources');
+    return { ok: true, id: source.id };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Σφάλμα';
+    if (msg.includes('Unique constraint') || msg.includes('unique')) {
+      return { ok: false, error: 'Αυτό το URL υπάρχει ήδη' };
+    }
+    return { ok: false, error: msg };
+  }
+}
+
+export async function updateRssSource(
+  id: string,
+  data: Partial<SourceData>
+): Promise<SourceMutationResult> {
+  try {
+    await requireAuth();
+    await prisma.rssSource.update({ where: { id }, data });
+    revalidatePath('/admin/sources');
+    return { ok: true, id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
+  }
+}
+
+export async function deleteRssSource(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAuth();
+    await prisma.rssSource.delete({ where: { id } });
+    revalidatePath('/admin/sources');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
+  }
+}
+
+export type TestFeedResult =
+  | { ok: true; itemCount: number; sampleTitles: string[] }
+  | { ok: false; error: string };
+
+export async function testRssFeed(url: string): Promise<TestFeedResult> {
+  try {
+    await requireAuth();
+    const items = await fetchFeed(url.trim());
+    return {
+      ok: true,
+      itemCount: items.length,
+      sampleTitles: items.slice(0, 3).map((i) => i.title),
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Αδύνατη η ανάγνωση του feed' };
   }
 }

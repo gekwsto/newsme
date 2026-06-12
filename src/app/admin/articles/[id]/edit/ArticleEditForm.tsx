@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Save, Eye, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { updateArticle } from '@/actions/articles';
@@ -10,6 +11,7 @@ import { ArticleStatus } from '@/generated/prisma/enums';
 interface ArticleEditFormProps {
   article: Article & { category: Category };
   categories: Category[];
+  imageSlot?: ReactNode;
 }
 
 const statusLabels: Record<ArticleStatus, string> = {
@@ -20,7 +22,7 @@ const statusLabels: Record<ArticleStatus, string> = {
   REJECTED: 'Απορριφθέν',
 };
 
-export default function ArticleEditForm({ article, categories }: ArticleEditFormProps) {
+export default function ArticleEditForm({ article, categories, imageSlot }: ArticleEditFormProps) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -28,7 +30,6 @@ export default function ArticleEditForm({ article, categories }: ArticleEditForm
     slug: article.slug,
     excerpt: article.excerpt,
     content: article.content,
-    coverImage: article.coverImage ?? '',
     categoryId: article.categoryId,
     seoTitle: article.seoTitle ?? '',
     seoDescription: article.seoDescription ?? '',
@@ -49,7 +50,6 @@ export default function ArticleEditForm({ article, categories }: ArticleEditForm
       await updateArticle(article.id, {
         ...form,
         status: form.status as ArticleStatus,
-        coverImage: form.coverImage || undefined,
         seoTitle: form.seoTitle || undefined,
         seoDescription: form.seoDescription || undefined,
         aiCommentary: form.aiCommentary || undefined,
@@ -164,17 +164,9 @@ export default function ArticleEditForm({ article, categories }: ArticleEditForm
                 ))}
               </select>
             </div>
-            <div>
-              <label className={labelClass}>Cover Image URL</label>
-              <input
-                type="url"
-                value={form.coverImage}
-                onChange={set('coverImage')}
-                placeholder="https://..."
-                className={inputClass}
-              />
-            </div>
           </div>
+
+          {imageSlot}
 
           {/* SEO */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">

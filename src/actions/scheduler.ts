@@ -5,7 +5,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { FacebookClient } from '@/lib/social/facebook';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
-import { SocialPostStatus, ScheduledPostStatus, SocialPlatform } from '@/generated/prisma/enums';
+import { SocialPostStatus, ScheduledPostStatus, SocialPlatform, QueueItemStatus } from '@/generated/prisma/enums';
+import { _executeQueueItem } from './queue';
 
 async function requireAuth() {
   const session = await auth();
@@ -137,12 +138,32 @@ export async function runScheduler(): Promise<RunSchedulerResult> {
     details.push({ id: sp.id, ...result });
   }
 
+  // ── Publishing Queue items ──────────────────────────────────────────────────
+  const queueItems = await prisma.publishQueueItem.findMany({
+    where: {
+      status: QueueItemStatus.SCHEDULED,
+      scheduledFor: { lte: new Date() },
+    },
+    orderBy: [{ priority: 'asc' }, { scheduledFor: 'asc' }],
+    select: { id: true },
+  });
+
+  for (const qi of queueItems) {
+    const res = await _executeQueueItem(qi.id);
+    if (res.ok) {
+      published++;
+    } else {
+      failed++;
+    }
+    details.push({ id: qi.id, ...res });
+  }
+
   void logEvent({
     service: SERVICE.SCHEDULER,
     type: 'scheduler_run',
     status: failed > 0 ? 'WARNING' : 'OK',
-    message: `Scheduler run: ${published} published, ${failed} failed`,
-    metadata: { published, failed, total: pending.length },
+    message: `Scheduler run: ${published} published, ${failed} failed (queue: ${queueItems.length})`,
+    metadata: { published, failed, total: pending.length, queueItems: queueItems.length },
   });
 
   return { ok: true, published, failed, details };

@@ -44,6 +44,9 @@ export interface GenerateOptions {
   articleType: ArticleType;
   targetLength: TargetLength;
   sourceUrl?: string;
+  sourceLanguage?: string;
+  sourceCountry?: string;
+  sourceName?: string;
   generateFacebookPost: boolean;
   generateAiCommentary: boolean;
 }
@@ -166,9 +169,18 @@ HTML: <h2>, <h3>, <p>, <ul><li>, <strong>, <blockquote>. Χωρίς <html>/<body
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }`;
 
-  const userPrompt = `Γράψε άρθρο για: "${options.topic}"${
-    options.sourceUrl ? `\n\nΠηγή: ${options.sourceUrl}` : ''
-  }`;
+  const isGreekSource = options.sourceLanguage === 'EL' || options.sourceCountry === 'GR';
+  const sourceContext = [
+    options.sourceUrl ? `Πηγή URL: ${options.sourceUrl}` : '',
+    options.sourceName ? `Πηγή: ${options.sourceName}` : '',
+    isGreekSource
+      ? 'ΣΗΜΑΝΤΙΚΟ: Η πηγή είναι ελληνική. Γράψε με πλήρη ελληνικό context. Μη μεταφράζεις ελληνικά ονόματα/θεσμούς. Χρησιμοποίησε ελληνικές αναφορές. Το Facebook angle να απευθύνεται σε Έλληνες αναγνώστες.'
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const userPrompt = `Γράψε άρθρο για: "${options.topic}"${sourceContext ? `\n\n${sourceContext}` : ''}`;
 
   const response = await client.chat.completions.create({
     model: 'gpt-4o',
@@ -212,6 +224,7 @@ HTML: <h2>, <h3>, <p>, <ul><li>, <strong>, <blockquote>. Χωρίς <html>/<body
       try { return new URL(options.sourceUrl).hostname.replace(/^www\./, ''); }
       catch { return options.sourceUrl; }
     })();
+    const displayName = options.sourceName || domain;
     const dateStr = new Date().toLocaleDateString('el-GR', {
       day: 'numeric',
       month: 'long',
@@ -219,8 +232,8 @@ HTML: <h2>, <h3>, <p>, <ul><li>, <strong>, <blockquote>. Χωρίς <html>/<body
     });
     article.contentHtml +=
       `\n<div class="article-source-attribution">\n` +
-      `  <p><strong>Πηγή:</strong> ` +
-      `<a href="${options.sourceUrl}" target="_blank" rel="noopener noreferrer">${domain}</a>` +
+      `  <p><strong>Πηγή:</strong> ${displayName}` +
+      ` &nbsp;|&nbsp; <a href="${options.sourceUrl}" target="_blank" rel="noopener noreferrer">Αρχικό άρθρο</a>` +
       ` &nbsp;|&nbsp; ${dateStr}</p>\n` +
       `</div>`;
   }

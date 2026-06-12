@@ -71,11 +71,25 @@ enum ScheduledPostStatus {
   CANCELLED
 }
 
+enum QueueItemStatus {
+  QUEUED
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
 enum ImageStatus {
   NONE
   PENDING
   GENERATED
   FAILED
+  RSS_AVAILABLE
+  RSS_SELECTED
+  AI_PENDING
+  AI_GENERATED
+  AI_FAILED
+  MANUAL_UPLOADED
 }
 
 enum SystemEventStatus {
@@ -129,7 +143,12 @@ model Article {
   coverImage        String?
   coverImagePrompt  String?       @db.Text
   generatedImageUrl String?
+  suggestedImageUrl String?
   imageStatus       ImageStatus   @default(NONE)
+  imageSource       String?
+  imageAttribution  String?
+  imageProvider     String?
+  imageCostEstimate Float?
   status            ArticleStatus @default(DRAFT)
   articleType       ArticleType   @default(NEWS)
   sourceType        SourceType    @default(MANUAL)
@@ -154,11 +173,12 @@ model Article {
   authorId String
   author   User    @relation(fields: [authorId], references: [id])
 
-  tags           ArticleTag[]
-  aiDraft        AiDraft?
-  socialPosts    SocialPost[]
-  approvals      Approval[]
-  scheduledPosts ScheduledPost[]
+  tags              ArticleTag[]
+  aiDraft           AiDraft?
+  socialPosts       SocialPost[]
+  approvals         Approval[]
+  scheduledPosts    ScheduledPost[]
+  publishQueueItems PublishQueueItem[]
 
   @@map("articles")
 }
@@ -198,8 +218,9 @@ model SocialPost {
   externalPostId String?
   errorMessage   String?          @db.Text
   createdAt      DateTime         @default(now())
-  performance    PostPerformance?
-  scheduledPost  ScheduledPost?
+  performance      PostPerformance?
+  scheduledPost    ScheduledPost?
+  publishQueueItem PublishQueueItem?
 
   @@map("social_posts")
 }
@@ -218,16 +239,20 @@ model Approval {
 }
 
 model RssSource {
-  id            String              @id @default(cuid())
-  name          String
-  url           String              @unique
-  categoryId    String
-  category      Category            @relation(fields: [categoryId], references: [id])
-  enabled       Boolean             @default(true)
-  lastFetchedAt DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  articles      DiscoveredArticle[]
+  id               String              @id @default(cuid())
+  name             String
+  url              String              @unique
+  categoryId       String
+  category         Category            @relation(fields: [categoryId], references: [id])
+  enabled          Boolean             @default(true)
+  language         String              @default("EN")
+  country          String              @default("GLOBAL")
+  reliabilityScore Int                 @default(70)
+  feedSourceType   String              @default("NEWS")
+  lastFetchedAt    DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  articles         DiscoveredArticle[]
 
   @@map("rss_sources")
 }
@@ -243,6 +268,7 @@ model DiscoveredArticle {
   categoryId     String
   category       Category         @relation(fields: [categoryId], references: [id])
   status         DiscoveredStatus @default(NEW)
+  imageUrl       String?
   localScore     Int?
   filteredReason String?
   clusterId      String?
@@ -359,6 +385,24 @@ model ScheduledPost {
   createdAt    DateTime            @default(now())
 
   @@map("scheduled_posts")
+}
+
+model PublishQueueItem {
+  id            String          @id @default(cuid())
+  articleId     String
+  article       Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  socialPostId  String?         @unique
+  socialPost    SocialPost?     @relation(fields: [socialPostId], references: [id], onDelete: SetNull)
+  queuePosition Int             @default(0)
+  priority      Int             @default(1)
+  scheduledFor  DateTime?
+  status        QueueItemStatus @default(QUEUED)
+  publishedAt   DateTime?
+  errorMessage  String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("publish_queue_items")
 }
 
 model SystemEvent {

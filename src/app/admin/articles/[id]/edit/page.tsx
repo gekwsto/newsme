@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import AdminShell from '@/components/admin/AdminShell';
 import ArticleEditForm from './ArticleEditForm';
+import ImageManager from './ImageManager';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,23 @@ export default async function ArticleEditPage({
           </h1>
           <p className="text-slate-400 text-sm mt-1 truncate">{article.title}</p>
         </div>
-        <ArticleEditForm article={article} categories={categories} />
+        <ArticleEditForm
+          article={article}
+          categories={categories}
+          imageSlot={
+            <ImageManager
+              articleId={article.id}
+              articleStatus={article.status}
+              currentImageUrl={article.generatedImageUrl ?? article.coverImage ?? null}
+              suggestedImageUrl={article.suggestedImageUrl ?? null}
+              imageStatus={article.imageStatus}
+              imageSource={article.imageSource ?? null}
+              imageProvider={article.imageProvider ?? null}
+              imageAttribution={article.imageAttribution ?? null}
+              imageCostEstimate={article.imageCostEstimate ?? null}
+            />
+          }
+        />
       </div>
     </AdminShell>
   );

@@ -42,7 +42,7 @@ async function fetchArticles(filters: { categoryId?: string; status?: string }) 
     orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
     take: 100,
     include: {
-      source: { select: { name: true } },
+      source: { select: { name: true, language: true, country: true, reliabilityScore: true } },
       category: { select: { name: true, color: true } },
       score: true,
       cluster: { select: { id: true, topic: true, articleCount: true, sourceCount: true, trendScore: true } },
@@ -300,6 +300,20 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
                       <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                         {article.source.name}
                       </span>
+                      {(article.source.language === 'EL' || article.source.country === 'GR') ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                          🇬🇷 EL
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
+                          🌍 EN
+                        </span>
+                      )}
+                      {article.source.reliabilityScore >= 85 && (
+                        <span title={`Reliability: ${article.source.reliabilityScore}`} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          ✓{article.source.reliabilityScore}
+                        </span>
+                      )}
                       {/* Cluster / trending badge */}
                       {article.cluster && (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 flex items-center gap-1">

@@ -20,6 +20,7 @@ import {
   SearchCheck,
   TreePine,
   Brain,
+  ListOrdered,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ interface AdminNavProps {
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/approvals', label: 'Approvals', icon: CheckSquare, exact: false },
+  { href: '/admin/publishing-queue', label: 'Queue', icon: ListOrdered, exact: false },
   { href: '/admin/articles', label: 'Άρθρα', icon: FileText, exact: false },
   { href: '/admin/ai-generator', label: 'AI Generator', icon: Sparkles, exact: false },
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
