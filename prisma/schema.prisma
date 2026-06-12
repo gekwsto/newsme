@@ -33,6 +33,7 @@ enum SocialPlatform {
   FACEBOOK
   INSTAGRAM
   TWITTER
+  LINKEDIN
 }
 
 enum SocialPostStatus {
@@ -54,6 +55,26 @@ enum DiscoveredStatus {
   NEW
   DRAFT_CREATED
   IGNORED
+}
+
+enum ScheduledPostStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+enum ImageStatus {
+  NONE
+  PENDING
+  GENERATED
+  FAILED
+}
+
+enum SystemEventStatus {
+  OK
+  WARNING
+  ERROR
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -93,22 +114,25 @@ model Tag {
 }
 
 model Article {
-  id             String        @id @default(cuid())
-  title          String
-  slug           String        @unique
-  excerpt        String
-  content        String        @db.Text
-  coverImage     String?
-  status         ArticleStatus @default(DRAFT)
-  sourceType     SourceType    @default(MANUAL)
-  aiCommentary   String?       @db.Text
-  seoTitle       String?
-  seoDescription String?
-  views          Int           @default(0)
-  readTime       Int           @default(3)
-  publishedAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  title             String
+  slug              String        @unique
+  excerpt           String
+  content           String        @db.Text
+  coverImage        String?
+  coverImagePrompt  String?       @db.Text
+  generatedImageUrl String?
+  imageStatus       ImageStatus   @default(NONE)
+  status            ArticleStatus @default(DRAFT)
+  sourceType        SourceType    @default(MANUAL)
+  aiCommentary      String?       @db.Text
+  seoTitle          String?
+  seoDescription    String?
+  views             Int           @default(0)
+  readTime          Int           @default(3)
+  publishedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -116,10 +140,11 @@ model Article {
   authorId String
   author   User    @relation(fields: [authorId], references: [id])
 
-  tags        ArticleTag[]
-  aiDraft     AiDraft?
-  socialPosts SocialPost[]
-  approvals   Approval[]
+  tags           ArticleTag[]
+  aiDraft        AiDraft?
+  socialPosts    SocialPost[]
+  approvals      Approval[]
+  scheduledPosts ScheduledPost[]
 
   @@map("articles")
 }
@@ -135,11 +160,11 @@ model ArticleTag {
 }
 
 model AiDraft {
-  id        String   @id @default(cuid())
-  articleId String   @unique
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  prompt    String   @db.Text
-  rawOutput String   @db.Text
+  id          String   @id @default(cuid())
+  articleId   String   @unique
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  prompt      String   @db.Text
+  rawOutput   String   @db.Text
   model       String   @default("gpt-4o")
   imagePrompt String?  @db.Text
   createdAt   DateTime @default(now())
@@ -148,15 +173,19 @@ model AiDraft {
 }
 
 model SocialPost {
-  id          String           @id @default(cuid())
-  articleId   String
-  article     Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  platform    SocialPlatform
-  content     String           @db.Text
-  status      SocialPostStatus @default(DRAFT)
-  scheduledAt DateTime?
-  publishedAt DateTime?
-  createdAt   DateTime         @default(now())
+  id             String           @id @default(cuid())
+  articleId      String
+  article        Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  platform       SocialPlatform
+  content        String           @db.Text
+  status         SocialPostStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  externalPostId String?
+  errorMessage   String?          @db.Text
+  createdAt      DateTime         @default(now())
+  performance    PostPerformance?
+  scheduledPost  ScheduledPost?
 
   @@map("social_posts")
 }
@@ -190,18 +219,106 @@ model RssSource {
 }
 
 model DiscoveredArticle {
-  id          String           @id @default(cuid())
-  sourceId    String
-  source      RssSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  title       String
-  url         String           @unique
-  excerpt     String?          @db.Text
-  publishedAt DateTime?
-  categoryId  String
-  category    Category         @relation(fields: [categoryId], references: [id])
-  status      DiscoveredStatus @default(NEW)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  sourceId       String
+  source         RssSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title          String
+  url            String           @unique
+  excerpt        String?          @db.Text
+  publishedAt    DateTime?
+  categoryId     String
+  category       Category         @relation(fields: [categoryId], references: [id])
+  status         DiscoveredStatus @default(NEW)
+  localScore     Int?
+  filteredReason String?
+  clusterId      String?
+  cluster        TrendCluster?    @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  clusterPrimary Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  score          ContentScore?
 
   @@map("discovered_articles")
+}
+
+model ContentScore {
+  id                      String            @id @default(cuid())
+  discoveredArticleId     String            @unique
+  discoveredArticle       DiscoveredArticle @relation(fields: [discoveredArticleId], references: [id], onDelete: Cascade)
+  viralScore              Int               @default(0)
+  discussionScore         Int               @default(0)
+  businessValueScore      Int               @default(0)
+  searchPotentialScore    Int               @default(0)
+  controversyScore        Int               @default(0)
+  facebookDiscussionScore Int               @default(0)
+  overallScore            Int               @default(0)
+  whyThisMatters          String?           @db.Text
+  bestFacebookAngle       String?           @db.Text
+  reasoning               String?           @db.Text
+  scoredAt                DateTime          @default(now())
+
+  @@map("content_scores")
+}
+
+model TrendCluster {
+  id           String              @id @default(cuid())
+  topic        String
+  trendScore   Int                 @default(0)
+  articleCount Int                 @default(0)
+  sourceCount  Int                 @default(0)
+  firstSeenAt  DateTime            @default(now())
+  lastSeenAt   DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  articles     DiscoveredArticle[]
+
+  @@map("trend_clusters")
+}
+
+model PostPerformance {
+  id                 String     @id @default(cuid())
+  socialPostId       String     @unique
+  socialPost         SocialPost @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  predictedReach     Int        @default(0)
+  predictedComments  Int        @default(0)
+  predictedShares    Int        @default(0)
+  actualReach        Int        @default(0)
+  actualComments     Int        @default(0)
+  actualShares       Int        @default(0)
+  actualReactions    Int        @default(0)
+  predictionAccuracy Int?
+  lastSyncedAt       DateTime?
+  createdAt          DateTime   @default(now())
+
+  @@map("post_performances")
+}
+
+model ScheduledPost {
+  id           String              @id @default(cuid())
+  articleId    String
+  article      Article             @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  socialPostId String              @unique
+  socialPost   SocialPost          @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  platform     SocialPlatform
+  scheduledFor DateTime
+  status       ScheduledPostStatus @default(PENDING)
+  publishedAt  DateTime?
+  errorMessage String?             @db.Text
+  createdAt    DateTime            @default(now())
+
+  @@map("scheduled_posts")
+}
+
+model SystemEvent {
+  id        String            @id @default(cuid())
+  service   String
+  type      String
+  status    SystemEventStatus
+  message   String            @db.Text
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([service, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("system_events")
 }

@@ -10,7 +10,7 @@ export interface FeedItem {
 const parser = new Parser({
   timeout: 15000,
   headers: {
-    'User-Agent': 'ΑΙΣΧΟΛΙΑΣΜΟΣ/1.0 RSS Reader (+https://aisxoliasmos.com)',
+    'User-Agent': 'AiSxoliasmos/1.0 RSS Reader (+https://aisxoliasmos.com)',
     Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
   },
   customFields: {

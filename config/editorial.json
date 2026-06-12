@@ -1,0 +1,8 @@
+{
+  "autoFilterEnabled": true,
+  "autoFilterThresholds": {
+    "overallScore": 60,
+    "viralScore": 65,
+    "discussionScore": 65
+  }
+}

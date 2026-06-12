@@ -3,24 +3,28 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X, Search, Sun, Moon } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { categories } from '@/lib/mock-data';
+import { useTheme } from '@/components/ThemeProvider';
 import BreakingNewsTicker from './BreakingNewsTicker';
 
-export default function Header() {
+interface HeaderProps {
+  categories: { name: string; slug: string }[];
+  newsItems: string[];
+}
+
+export default function Header({ categories, newsItems }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => setMounted(true), []);
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
 
   return (
     <header className="sticky top-0 z-50 bg-slate-900 shadow-lg">
       {/* Breaking news ticker */}
-      <BreakingNewsTicker />
+      <BreakingNewsTicker items={newsItems} />
 
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,9 +68,9 @@ export default function Header() {
               <button
                 onClick={toggleTheme}
                 className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700/60 transition-colors"
-                aria-label={theme === 'dark' ? 'Φωτεινό θέμα' : 'Σκοτεινό θέμα'}
+                aria-label={resolvedTheme === 'dark' ? 'Φωτεινό θέμα' : 'Σκοτεινό θέμα'}
               >
-                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+                {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
               </button>
             )}
 

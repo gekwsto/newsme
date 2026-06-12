@@ -7,21 +7,24 @@ import {
   approveSocialPost,
   rejectSocialPost,
   markSocialPostPublished,
+  publishSocialPostToFacebook,
 } from '@/actions/social-posts';
 
 interface Props {
   postId: string;
   status: string;
+  platform: string;
 }
 
-export default function SocialPostActions({ postId, status }: Props) {
+export default function SocialPostActions({ postId, status, platform }: Props) {
   const [isSubmitting, startSubmitT] = useTransition();
   const [isApproving, startApproveT] = useTransition();
   const [isRejecting, startRejectT] = useTransition();
   const [isPublishing, startPublishT] = useTransition();
+  const [isFbPublishing, startFbPublishT] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  const busy = isSubmitting || isApproving || isRejecting || isPublishing;
+  const busy = isSubmitting || isApproving || isRejecting || isPublishing || isFbPublishing;
 
   async function wrap(fn: () => Promise<{ ok: boolean; error?: string }>, label: string) {
     setFeedback(null);
@@ -78,8 +81,23 @@ export default function SocialPostActions({ postId, status }: Props) {
           </>
         )}
 
-        {/* APPROVED → mark published */}
-        {status === 'APPROVED' && (
+        {/* APPROVED + FACEBOOK → publish to Facebook */}
+        {status === 'APPROVED' && platform === 'FACEBOOK' && (
+          <button
+            disabled={busy}
+            onClick={() =>
+              startFbPublishT(() =>
+                wrap(() => publishSocialPostToFacebook(postId), '✓ Δημοσιεύτηκε στο Facebook')
+              )
+            }
+            className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[#1877F2] text-white hover:bg-[#1560cc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isFbPublishing ? '…' : 'Publish to Facebook'}
+          </button>
+        )}
+
+        {/* APPROVED + other platforms → manual mark published */}
+        {status === 'APPROVED' && platform !== 'FACEBOOK' && (
           <button
             disabled={busy}
             onClick={() => startPublishT(() => wrap(() => markSocialPostPublished(postId), '✓ Δημοσιεύτηκε'))}

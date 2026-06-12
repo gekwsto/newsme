@@ -13,21 +13,24 @@ export default function CategoryBadge({
   size = 'md',
   linkable = true,
 }: CategoryBadgeProps) {
+  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1';
   const classes = cn(
     'inline-flex items-center font-semibold rounded-full border tracking-wide',
-    category.color,
-    category.bgColor,
-    category.borderColor,
-    size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'
+    sizeClass
   );
+  const style = {
+    color: category.color,
+    backgroundColor: `${category.color}20`,
+    borderColor: `${category.color}50`,
+  };
 
   if (linkable) {
     return (
-      <Link href={`/category/${category.slug}`} className={cn(classes, 'hover:opacity-80 transition-opacity')}>
+      <Link href={`/category/${category.slug}`} className={cn(classes, 'hover:opacity-80 transition-opacity')} style={style}>
         {category.name}
       </Link>
     );
   }
 
-  return <span className={classes}>{category.name}</span>;
+  return <span className={classes} style={style}>{category.name}</span>;
 }

@@ -1,30 +1,37 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Clock, Eye, ChevronRight } from 'lucide-react';
+import { Clock, ChevronRight } from 'lucide-react';
 import { Article } from '@/types';
 import CategoryBadge from '@/components/ui/CategoryBadge';
-import { formatRelativeDate, formatNumber } from '@/lib/utils';
+import { formatRelativeDate } from '@/lib/utils';
 
 interface FeaturedArticleProps {
   article: Article;
 }
 
 export default function FeaturedArticle({ article }: FeaturedArticleProps) {
+  const initials = article.author.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <article className="relative rounded-2xl overflow-hidden group bg-slate-900 min-h-[520px] md:min-h-[580px] lg:min-h-[640px] flex flex-col justify-end shadow-2xl">
-      {/* Background image */}
+      {/* Background image or gradient fallback */}
       <div className="absolute inset-0">
-        <Image
-          src={article.imageUrl}
-          alt={article.title}
-          fill
-          priority
-          className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-          sizes="(max-width: 1280px) 100vw, 900px"
-        />
-        {/* Stronger gradient for better text contrast */}
+        {article.imageUrl ? (
+          <Image
+            src={article.imageUrl}
+            alt={article.title}
+            fill
+            priority
+            className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+            sizes="(max-width: 1280px) 100vw, 900px"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: `${article.category.color}30` }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/10" />
-        {/* Subtle side vignette */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
       </div>
 
@@ -56,24 +63,15 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
         {/* Meta + CTA */}
         <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-slate-600 overflow-hidden relative border-2 border-white/20 shrink-0">
-              {article.author.avatar && (
-                <Image
-                  src={article.author.avatar}
-                  alt={article.author.name}
-                  fill
-                  className="object-cover"
-                  sizes="36px"
-                />
-              )}
+            <div className="w-9 h-9 rounded-full bg-slate-600 flex items-center justify-center border-2 border-white/20 shrink-0">
+              <span className="text-white text-xs font-bold">{initials}</span>
             </div>
             <div>
               <p className="text-white text-sm font-semibold leading-none">{article.author.name}</p>
               <p className="text-slate-400 text-xs mt-0.5">{formatRelativeDate(article.publishedAt)}</p>
             </div>
-            <div className="flex items-center gap-3 text-slate-400 text-xs ml-2 pl-3 border-l border-white/15">
-              <span className="flex items-center gap-1"><Clock size={11} />{article.readTime} λεπτά</span>
-              <span className="flex items-center gap-1"><Eye size={11} />{formatNumber(article.views)}</span>
+            <div className="flex items-center gap-1 text-slate-400 text-xs ml-2 pl-3 border-l border-white/15">
+              <Clock size={11} />{article.readTime} λεπτά
             </div>
           </div>
 

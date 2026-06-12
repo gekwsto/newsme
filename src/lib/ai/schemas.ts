@@ -29,15 +29,15 @@ export const articleTypeLabels: Record<ArticleType, string> = {
 };
 
 export const targetLengthLabels: Record<TargetLength, string> = {
-  short: 'Σύντομο (300-500 λέξεις)',
-  medium: 'Μεσαίο (600-900 λέξεις)',
-  long: 'Εκτεταμένο (1000-1400 λέξεις)',
+  short: 'Σύντομο (600-800 λέξεις)',
+  medium: 'Μεσαίο (800-1100 λέξεις)',
+  long: 'Εκτεταμένο (1100-1500 λέξεις)',
 };
 
 export const wordCountMap: Record<TargetLength, string> = {
-  short: '300-500',
-  medium: '600-900',
-  long: '1000-1400',
+  short: '600-800',
+  medium: '800-1100',
+  long: '1100-1500',
 };
 
 // ─── Input schema ─────────────────────────────────────────────────────────────

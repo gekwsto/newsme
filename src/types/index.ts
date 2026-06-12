@@ -1,25 +1,13 @@
-export type CategorySlug =
-  | 'ai'
-  | 'texnologia'
-  | 'oikonomia'
-  | 'epixeirimatikotita'
-  | 'ellada'
-  | 'kosmos'
-  | 'viral'
-  | 'apopseis';
-
 export interface Category {
   name: string;
-  slug: CategorySlug;
-  color: string;
-  bgColor: string;
-  borderColor: string;
+  slug: string;
+  color: string; // hex color e.g. "#6366f1"
 }
 
 export interface Author {
   name: string;
-  avatar: string;
-  bio: string;
+  avatar?: string;
+  bio?: string;
 }
 
 export interface Article {
@@ -32,11 +20,11 @@ export interface Article {
   author: Author;
   publishedAt: string;
   readTime: number;
-  imageUrl: string;
-  featured: boolean;
+  imageUrl?: string;
+  featured?: boolean;
   breaking?: boolean;
   tags: string[];
-  views: number;
+  views?: number;
   aiCommentary?: string;
 }
 

@@ -5,6 +5,11 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { fetchFeed } from '@/lib/rss/fetcher';
 import { generateArticleContent } from '@/lib/ai/content-generator';
+import { scoreArticles } from '@/lib/ai/content-scorer';
+import { clusterArticles, calcTrendScore } from '@/lib/ai/trend-clusterer';
+import { getEditorialConfig } from '@/lib/editorial-config';
+import { getContentFiltersConfig, computeLocalScore } from '@/lib/content-filter';
+import { logEvent, SERVICE } from '@/lib/monitoring/events';
 import { ArticleStatus, SourceType, SocialPostStatus, DiscoveredStatus } from '@/generated/prisma/enums';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,6 +35,155 @@ async function uniqueSlug(base: string): Promise<string> {
     if (!(await prisma.article.findUnique({ where: { slug: candidate } }))) return candidate;
     suffix++;
   }
+}
+
+// ─── Scoring helpers ───────────────────────────────────────────────────────────
+
+async function _scoreAndSave(
+  articles: { id: string; title: string; excerpt: string | null }[]
+): Promise<void> {
+  if (articles.length === 0) return;
+  const scores = await scoreArticles(articles);
+  const config = getEditorialConfig();
+
+  let filtered = 0;
+  for (const s of scores) {
+    const scoreData = {
+      viralScore: s.viralScore,
+      discussionScore: s.discussionScore,
+      businessValueScore: s.businessValueScore,
+      searchPotentialScore: s.searchPotentialScore,
+      controversyScore: s.controversyScore,
+      facebookDiscussionScore: s.facebookDiscussionScore,
+      overallScore: s.overallScore,
+      whyThisMatters: s.whyThisMatters || null,
+      bestFacebookAngle: s.bestFacebookAngle || null,
+      reasoning: s.reasoning || null,
+    };
+
+    await prisma.contentScore.upsert({
+      where: { discoveredArticleId: s.id },
+      create: { discoveredArticleId: s.id, ...scoreData },
+      update: { ...scoreData, scoredAt: new Date() },
+    });
+
+    // Auto-filter: ignore if ALL three thresholds fail
+    if (config.autoFilterEnabled) {
+      const t = config.autoFilterThresholds;
+      const fails =
+        s.overallScore < t.overallScore &&
+        s.viralScore < t.viralScore &&
+        s.discussionScore < t.discussionScore;
+      if (fails) {
+        await prisma.discoveredArticle.updateMany({
+          where: { id: s.id, status: DiscoveredStatus.NEW },
+          data: { status: DiscoveredStatus.IGNORED },
+        });
+        filtered++;
+      }
+    }
+  }
+
+  void logEvent({
+    service: SERVICE.SCORING,
+    type: 'batch_score',
+    status: 'OK',
+    message: `Scored ${scores.length} articles, auto-filtered ${filtered}`,
+    metadata: { count: scores.length, filtered },
+  });
+}
+
+// ─── Clustering helpers ────────────────────────────────────────────────────────
+
+async function _clusterAndSave(): Promise<number> {
+  const since = new Date(Date.now() - 72 * 60 * 60 * 1000);
+
+  const articles = await prisma.discoveredArticle.findMany({
+    where: { createdAt: { gte: since } },
+    select: {
+      id: true,
+      title: true,
+      excerpt: true,
+      sourceId: true,
+      source: { select: { name: true } },
+      score: { select: { viralScore: true } },
+    },
+    take: 80,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (articles.length < 2) return 0;
+
+  const clusters = await clusterArticles(
+    articles.map((a) => ({
+      id: a.id,
+      title: a.title,
+      excerpt: a.excerpt,
+      sourceName: a.source.name,
+      viralScore: a.score?.viralScore ?? 0,
+    }))
+  );
+
+  if (clusters.length === 0) return 0;
+
+  // Reset cluster assignments for this window before re-assigning
+  await prisma.discoveredArticle.updateMany({
+    where: { id: { in: articles.map((a) => a.id) } },
+    data: { clusterId: null, clusterPrimary: false },
+  });
+
+  for (const cluster of clusters) {
+    const clusterArticles = articles.filter((a) => cluster.articleIds.includes(a.id));
+    const sourceCount = new Set(clusterArticles.map((a) => a.sourceId)).size;
+    const avgViral =
+      clusterArticles.reduce((s, a) => s + (a.score?.viralScore ?? 0), 0) /
+      Math.max(clusterArticles.length, 1);
+    const now = new Date();
+    const trendScore = calcTrendScore({
+      articleCount: clusterArticles.length,
+      sourceCount,
+      lastSeenAt: now,
+      avgViralScore: avgViral,
+    });
+
+    const existing = await prisma.trendCluster.findFirst({
+      where: {
+        topic: cluster.topic,
+        firstSeenAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    });
+
+    let clusterId: string;
+    if (existing) {
+      await prisma.trendCluster.update({
+        where: { id: existing.id },
+        data: { articleCount: clusterArticles.length, sourceCount, trendScore, lastSeenAt: now },
+      });
+      clusterId = existing.id;
+    } else {
+      const created = await prisma.trendCluster.create({
+        data: { topic: cluster.topic, articleCount: clusterArticles.length, sourceCount, trendScore },
+      });
+      clusterId = created.id;
+    }
+
+    for (const articleId of cluster.articleIds) {
+      await prisma.discoveredArticle.update({
+        where: { id: articleId },
+        data: { clusterId, clusterPrimary: articleId === cluster.primaryArticleId },
+      });
+    }
+  }
+
+  void logEvent({
+    service: SERVICE.CLUSTERING,
+    type: 'cluster_run',
+    status: 'OK',
+    message: `Clustered ${articles.length} articles into ${clusters.length} topics`,
+    metadata: { articleCount: articles.length, clusterCount: clusters.length },
+  });
+
+  return clusters.length;
 }
 
 // ─── Internal fetch logic ──────────────────────────────────────────────────────
@@ -95,7 +249,7 @@ export async function fetchSourceNow(sourceId: string): Promise<FetchResult> {
 }
 
 export type FetchAllResult =
-  | { ok: true; results: Array<{ sourceName: string; newCount: number; error?: string }> }
+  | { ok: true; results: Array<{ sourceName: string; newCount: number; error?: string }>; scored: number; preFiltered: number; clustered: number }
   | { ok: false; error: string };
 
 export async function fetchAllSources(): Promise<FetchAllResult> {
@@ -118,10 +272,107 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
         : { sourceName: sources[i].name, newCount: 0, error: r.reason?.message ?? 'Error' }
     );
 
+    const totalNew = results.reduce((s, r) => s + r.newCount, 0);
+    const errorCount = results.filter((r) => 'error' in r && r.error).length;
+    void logEvent({
+      service: SERVICE.RSS,
+      type: 'fetch_all',
+      status: errorCount > 0 ? 'WARNING' : 'OK',
+      message: `Fetched ${sources.length} sources — ${totalNew} new articles${errorCount > 0 ? `, ${errorCount} errors` : ''}`,
+      metadata: { sourceCount: sources.length, totalNew, errorCount },
+    });
+
+    // Pre-filter then score
+    let scored = 0;
+    let preFiltered = 0;
+    try {
+      const filtersConfig = getContentFiltersConfig();
+
+      // Fetch unscored articles with category info for pre-filter
+      const unscored = await prisma.discoveredArticle.findMany({
+        where: { score: null, status: DiscoveredStatus.NEW },
+        select: {
+          id: true,
+          title: true,
+          excerpt: true,
+          url: true,
+          category: { select: { name: true } },
+        },
+      });
+
+      if (unscored.length > 0) {
+        // Existing titles in last 48h for duplicate detection
+        const recentTitles = await prisma.discoveredArticle.findMany({
+          where: {
+            createdAt: { gte: new Date(Date.now() - 48 * 3600000) },
+            id: { notIn: unscored.map((a) => a.id) },
+          },
+          select: { title: true },
+        });
+        const existingTitles = recentTitles.map((a) => a.title);
+
+        // Compute localScore for every unscored article
+        const filterResults = unscored.map((a) =>
+          computeLocalScore(
+            { id: a.id, title: a.title, excerpt: a.excerpt, url: a.url, categoryName: a.category.name },
+            filtersConfig,
+            existingTitles
+          )
+        );
+
+        // Persist localScore + filteredReason, mark ignored
+        for (const r of filterResults) {
+          await prisma.discoveredArticle.update({
+            where: { id: r.id },
+            data: {
+              localScore: r.localScore,
+              filteredReason: r.filteredReason,
+              ...(r.shouldIgnore ? { status: DiscoveredStatus.IGNORED } : {}),
+            },
+          });
+        }
+
+        preFiltered = filterResults.filter((r) => r.shouldIgnore).length;
+
+        // Send only top-N by localScore to OpenAI (batch limit)
+        const toScore = filterResults
+          .filter((r) => !r.shouldIgnore)
+          .sort((a, b) => b.localScore - a.localScore)
+          .slice(0, filtersConfig.maxBatchSize)
+          .map((r) => unscored.find((a) => a.id === r.id)!)
+          .filter(Boolean);
+
+        if (toScore.length > 0) {
+          await _scoreAndSave(toScore);
+          scored = toScore.length;
+        }
+
+        void logEvent({
+          service: SERVICE.SCORING,
+          type: 'pre_filter',
+          status: 'OK',
+          message: `Pre-filter: ${preFiltered}/${unscored.length} skipped before AI (${scored} sent to OpenAI)`,
+          metadata: { total: unscored.length, preFiltered, sentToAI: scored },
+        });
+      }
+    } catch (err) {
+      console.warn('[rss] pre-filter/scoring failed:', err instanceof Error ? err.message : err);
+    }
+
+    // Cluster recent articles when there are new items
+    let clustered = 0;
+    if (totalNew >= 2) {
+      try {
+        clustered = await _clusterAndSave();
+      } catch (err) {
+        console.warn('[rss] clustering failed:', err instanceof Error ? err.message : err);
+      }
+    }
+
     revalidatePath('/admin/news-discovery');
     revalidatePath('/admin/sources');
 
-    return { ok: true, results };
+    return { ok: true, results, scored, preFiltered, clustered };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
   }
@@ -135,6 +386,25 @@ export async function toggleRssSource(sourceId: string, enabled: boolean): Promi
     await prisma.rssSource.update({ where: { id: sourceId }, data: { enabled } });
     revalidatePath('/admin/sources');
     return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
+  }
+}
+
+export type ScoreUnscoredResult = { ok: true; scored: number } | { ok: false; error: string };
+
+export async function scoreUnscoredArticles(): Promise<ScoreUnscoredResult> {
+  try {
+    await requireAuth();
+    const unscored = await prisma.discoveredArticle.findMany({
+      where: { score: null },
+      select: { id: true, title: true, excerpt: true },
+      take: 50,
+    });
+    if (unscored.length === 0) return { ok: true, scored: 0 };
+    await _scoreAndSave(unscored);
+    revalidatePath('/admin/news-discovery');
+    return { ok: true, scored: unscored.length };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
   }
@@ -208,7 +478,7 @@ export async function generateDraftFromDiscoveredArticle(
     });
 
     if (generated.facebookPost) {
-      await prisma.socialPost.create({
+      const socialPost = await prisma.socialPost.create({
         data: {
           articleId: article.id,
           platform: 'FACEBOOK',
@@ -216,6 +486,23 @@ export async function generateDraftFromDiscoveredArticle(
           status: SocialPostStatus.DRAFT,
         },
       });
+
+      // Store performance predictions from ContentScore
+      const discoveredWithScore = await prisma.discoveredArticle.findUnique({
+        where: { id: discoveredId },
+        select: { score: true },
+      });
+      const score = discoveredWithScore?.score;
+      if (score) {
+        await prisma.postPerformance.create({
+          data: {
+            socialPostId: socialPost.id,
+            predictedReach: score.facebookDiscussionScore,
+            predictedComments: Math.round((score.controversyScore + score.discussionScore) / 2),
+            predictedShares: score.viralScore,
+          },
+        });
+      }
     }
 
     for (const tagName of generated.tags) {
@@ -241,10 +528,26 @@ export async function generateDraftFromDiscoveredArticle(
     revalidatePath('/admin/news-discovery');
     revalidatePath('/admin/approvals');
 
+    void logEvent({
+      service: SERVICE.ARTICLE,
+      type: 'draft_created',
+      status: 'OK',
+      message: `Draft created: "${generated.title}"`,
+      metadata: { articleId: article.id, discoveredId, source: discovered.source.name },
+    });
+
     return { ok: true, articleId: article.id, title: generated.title };
   } catch (err) {
+    const message = err instanceof Error ? err.message : 'Άγνωστο σφάλμα';
     console.error('[generateDraftFromDiscoveredArticle]', err);
-    return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
+    void logEvent({
+      service: SERVICE.ARTICLE,
+      type: 'draft_created',
+      status: 'ERROR',
+      message: `Draft creation failed: ${message}`,
+      metadata: { discoveredId },
+    });
+    return { ok: false, error: message };
   }
 }
 

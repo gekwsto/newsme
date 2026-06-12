@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import Header from '@/components/layout/Header';
+import HeaderWrapper from '@/components/layout/HeaderWrapper';
 import Footer from '@/components/layout/Footer';
 import ThemeProvider from '@/components/ThemeProvider';
 
@@ -51,7 +51,7 @@ export default function RootLayout({
     <html lang="el" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body className="antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
         <ThemeProvider>
-          <Header />
+          <HeaderWrapper />
           <main className="min-h-screen">{children}</main>
           <Footer />
         </ThemeProvider>

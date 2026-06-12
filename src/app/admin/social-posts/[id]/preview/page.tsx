@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import AdminShell from '@/components/admin/AdminShell';
+import PublishToFacebookButton from './PublishToFacebookButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,27 +66,48 @@ export default async function SocialPostPreviewPage({ params }: PageProps) {
             <span className="text-gray-300 dark:text-gray-600">/</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">Facebook Preview</span>
           </div>
-          <Link
-            href={`/admin/social-posts/${id}/edit`}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-          >
-            Επεξεργασία
-          </Link>
+          <div className="flex items-center gap-2">
+            {post.status === 'APPROVED' && post.platform === 'FACEBOOK' && (
+              <PublishToFacebookButton postId={id} />
+            )}
+            <Link
+              href={`/admin/social-posts/${id}/edit`}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            >
+              Επεξεργασία
+            </Link>
+          </div>
         </div>
 
         {/* Status badge */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
-          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-            {STATUS_LABELS[post.status] ?? post.status}
-          </span>
-          {post.scheduledAt && (
-            <>
-              <span className="text-xs text-gray-400">·</span>
-              <span className="text-xs text-gray-400">
-                Προγραμματισμένο: {post.scheduledAt.toLocaleString('el-GR')}
-              </span>
-            </>
+        <div className="mb-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+              {STATUS_LABELS[post.status] ?? post.status}
+            </span>
+            {post.scheduledAt && (
+              <>
+                <span className="text-xs text-gray-400">·</span>
+                <span className="text-xs text-gray-400">
+                  Προγραμματισμένο: {post.scheduledAt.toLocaleString('el-GR')}
+                </span>
+              </>
+            )}
+            {post.externalPostId && (
+              <>
+                <span className="text-xs text-gray-400">·</span>
+                <span className="text-xs text-gray-400">
+                  Facebook ID: <span className="font-mono">{post.externalPostId}</span>
+                </span>
+              </>
+            )}
+          </div>
+          {post.errorMessage && (
+            <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">
+              <p className="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">Σφάλμα δημοσίευσης</p>
+              <p className="text-xs text-red-600 dark:text-red-400">{post.errorMessage}</p>
+            </div>
           )}
         </div>
 

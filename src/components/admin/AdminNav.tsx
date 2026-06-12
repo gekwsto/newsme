@@ -13,6 +13,10 @@ import {
   Rss,
   Newspaper,
   MessageSquare,
+  Activity,
+  BarChart2,
+  AlertTriangle,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +32,10 @@ const navItems = [
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
   { href: '/admin/sources', label: 'RSS Sources', icon: Rss, exact: false },
   { href: '/admin/social-posts', label: 'Social Posts', icon: MessageSquare, exact: false },
+  { href: '/admin/analytics', label: 'Analytics', icon: BarChart2, exact: false },
+  { href: '/admin/operations', label: 'Operations', icon: Activity, exact: false },
+  { href: '/admin/errors', label: 'Errors', icon: AlertTriangle, exact: false },
+  { href: '/admin/readiness', label: 'Readiness', icon: ShieldCheck, exact: false },
 ];
 
 export default function AdminNav({ user }: AdminNavProps) {

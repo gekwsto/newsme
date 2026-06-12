@@ -1,18 +1,14 @@
 'use client';
 
-const items = [
-  'ChatGPT-5 κυκλοφόρησε — Επανάσταση στην τεχνητή νοημοσύνη',
-  'Bitcoin ξεπέρασε τα $100.000 για πρώτη φορά στην ιστορία',
-  'Ελλάδα: ΑΕΠ +3,2% για τρίτη συνεχή χρονιά — Ξεπέρασε τον ευρωπαϊκό μέσο όρο',
-  'EU AI Act σε ισχύ — Τι αλλάζει για εταιρείες και καταναλωτές',
-  'Apple Intelligence στο iPhone 17 — Πλήρης υποστήριξη ελληνικής γλώσσας',
-  'Startup από Θεσσαλονίκη σε Times & Forbes — €15 εκατ. Series A',
-];
+interface BreakingNewsTickerProps {
+  items: string[];
+}
 
-/* Duplicate for seamless loop: when first half scrolls out, second half seamlessly continues */
-const doubled = [...items, ...items];
+export default function BreakingNewsTicker({ items }: BreakingNewsTickerProps) {
+  if (!items.length) return null;
 
-export default function BreakingNewsTicker() {
+  const doubled = [...items, ...items];
+
   return (
     <div className="bg-red-600 text-white overflow-hidden">
       <div className="max-w-7xl mx-auto flex items-center">

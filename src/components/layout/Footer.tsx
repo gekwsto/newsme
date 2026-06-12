@@ -1,10 +1,14 @@
 import Link from 'next/link';
-import { categories } from '@/lib/mock-data';
 import { Rss, Mail } from 'lucide-react';
 import { XIcon, FacebookIcon, InstagramIcon } from '@/components/ui/SocialIcons';
+import { prisma } from '@/lib/db';
 
-export default function Footer() {
+export default async function Footer() {
   const year = new Date().getFullYear();
+  const categories = await prisma.category.findMany({
+    orderBy: { name: 'asc' },
+    select: { name: true, slug: true },
+  });
 
   return (
     <footer className="bg-slate-900 text-slate-400 mt-16">

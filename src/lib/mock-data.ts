@@ -1,62 +1,14 @@
 import { Article, Category, AdminArticle } from '@/types';
 
 export const categories: Category[] = [
-  {
-    name: 'AI',
-    slug: 'ai',
-    color: 'text-violet-700',
-    bgColor: 'bg-violet-100',
-    borderColor: 'border-violet-200',
-  },
-  {
-    name: 'Τεχνολογία',
-    slug: 'texnologia',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
-    borderColor: 'border-blue-200',
-  },
-  {
-    name: 'Οικονομία',
-    slug: 'oikonomia',
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-100',
-    borderColor: 'border-emerald-200',
-  },
-  {
-    name: 'Επιχειρηματικότητα',
-    slug: 'epixeirimatikotita',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-100',
-    borderColor: 'border-orange-200',
-  },
-  {
-    name: 'Ελλάδα',
-    slug: 'ellada',
-    color: 'text-cyan-700',
-    bgColor: 'bg-cyan-100',
-    borderColor: 'border-cyan-200',
-  },
-  {
-    name: 'Κόσμος',
-    slug: 'kosmos',
-    color: 'text-indigo-700',
-    bgColor: 'bg-indigo-100',
-    borderColor: 'border-indigo-200',
-  },
-  {
-    name: 'Viral',
-    slug: 'viral',
-    color: 'text-pink-700',
-    bgColor: 'bg-pink-100',
-    borderColor: 'border-pink-200',
-  },
-  {
-    name: 'Απόψεις',
-    slug: 'apopseis',
-    color: 'text-slate-700',
-    bgColor: 'bg-slate-100',
-    borderColor: 'border-slate-200',
-  },
+  { name: 'AI', slug: 'ai', color: '#7c3aed' },
+  { name: 'Τεχνολογία', slug: 'texnologia', color: '#1d4ed8' },
+  { name: 'Οικονομία', slug: 'oikonomia', color: '#059669' },
+  { name: 'Επιχειρηματικότητα', slug: 'epixeirimatikotita', color: '#c2410c' },
+  { name: 'Ελλάδα', slug: 'ellada', color: '#0891b2' },
+  { name: 'Κόσμος', slug: 'kosmos', color: '#4338ca' },
+  { name: 'Viral', slug: 'viral', color: '#db2777' },
+  { name: 'Απόψεις', slug: 'apopseis', color: '#475569' },
 ];
 
 export const getCategoryBySlug = (slug: string): Category | undefined =>
