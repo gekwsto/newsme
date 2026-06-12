@@ -48,11 +48,16 @@ export async function rejectArticle(articleId: string, note?: string) {
 export async function publishArticle(articleId: string) {
   await requireAuth();
 
-  await prisma.article.update({
+  const article = await prisma.article.update({
     where: { id: articleId },
     data: { status: ArticleStatus.PUBLISHED, publishedAt: new Date() },
+    select: { slug: true, category: { select: { slug: true } } },
   });
 
+  revalidatePath('/');
+  revalidatePath('/articles');
+  revalidatePath(`/article/${article.slug}`);
+  revalidatePath(`/category/${article.category.slug}`);
   revalidatePath('/admin/approvals');
   revalidatePath('/admin');
 }
