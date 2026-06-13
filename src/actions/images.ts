@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateArticleImage } from '@/lib/images/image-provider';
+import { searchPexelsImages, searchPexelsWithFallback, type PexelsPhoto } from '@/lib/images/pexels-provider';
+import { buildSmartImageQuery } from '@/lib/images/smart-query';
 
 type ImageActionResult = { ok: true } | { ok: false; error: string };
 type GenerateResult = { ok: true; url: string; cost: number } | { ok: false; error: string };
@@ -112,6 +114,101 @@ export async function setManualImage(
         imageSource: 'MANUAL',
         imageProvider: 'manual',
         imageAttribution: attribution || null,
+        imageCostEstimate: 0,
+      },
+    });
+
+    revalidatePath(`/admin/articles/${articleId}/edit`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
+  }
+}
+
+export type PexelsSearchResult =
+  | {
+      ok: true;
+      photos: PexelsPhoto[];
+      primaryQuery: string;
+      alternativeQueries: string[];
+      reason: string;
+      usedQuery: string;
+    }
+  | { ok: false; error: string };
+
+export async function searchArticlePexels(articleId: string): Promise<PexelsSearchResult> {
+  try {
+    await requireAuth();
+
+    const article = await prisma.article.findUniqueOrThrow({
+      where: { id: articleId },
+      select: {
+        title: true,
+        excerpt: true,
+        content: true,
+        seoTitle: true,
+        category: { select: { name: true } },
+        tags: { include: { tag: { select: { name: true } } } },
+      },
+    });
+
+    const tags = article.tags.map((t) => t.tag.name);
+    const smartQuery = await buildSmartImageQuery({
+      title: article.title,
+      excerpt: article.excerpt,
+      content: article.content,
+      tags,
+      categoryName: article.category.name,
+      seoTitle: article.seoTitle,
+    });
+
+    const allQueries = [smartQuery.primaryQuery, ...smartQuery.alternativeQueries];
+    const { photos, usedQuery } = await searchPexelsWithFallback(allQueries);
+
+    return {
+      ok: true,
+      photos,
+      primaryQuery: smartQuery.primaryQuery,
+      alternativeQueries: smartQuery.alternativeQueries,
+      reason: smartQuery.reason,
+      usedQuery,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα Pexels' };
+  }
+}
+
+export async function searchPexelsByCustomQuery(
+  query: string
+): Promise<{ ok: true; photos: PexelsPhoto[]; usedQuery: string } | { ok: false; error: string }> {
+  try {
+    await requireAuth();
+    const trimmed = query.trim().split(/\s+/).slice(0, 4).join(' ');
+    if (!trimmed) return { ok: false, error: 'Κενό query' };
+    const photos = await searchPexelsImages(trimmed);
+    return { ok: true, photos, usedQuery: trimmed };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα Pexels' };
+  }
+}
+
+export async function selectPexelsImage(
+  articleId: string,
+  photo: PexelsPhoto
+): Promise<ImageActionResult> {
+  try {
+    await requireAuth();
+
+    const attribution = `${photo.photographer} via Pexels`;
+    await prisma.article.update({
+      where: { id: articleId },
+      data: {
+        coverImage: photo.imageUrl,
+        generatedImageUrl: photo.imageUrl,
+        imageStatus: 'MANUAL_UPLOADED',
+        imageSource: 'PEXELS',
+        imageProvider: 'Pexels',
+        imageAttribution: attribution,
         imageCostEstimate: 0,
       },
     });

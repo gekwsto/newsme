@@ -6,6 +6,18 @@ import { generateArticleContent } from '@/lib/ai/content-generator';
 import { GenerateInputSchema, type GenerateInput } from '@/lib/ai/schemas';
 import { ArticleStatus, SourceType, SocialPostStatus } from '@/generated/prisma/enums';
 
+async function resolveSuggestedCategory(
+  suggestedCategory: string | undefined,
+  fallbackId: string
+): Promise<string> {
+  if (!suggestedCategory) return fallbackId;
+  const cat = await prisma.category.findFirst({
+    where: { name: suggestedCategory },
+    select: { id: true },
+  });
+  return cat?.id ?? fallbackId;
+}
+
 export type GenerateResult =
   | { ok: true; articleId: string; title: string }
   | { ok: false; error: string };
@@ -59,6 +71,7 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
       validated.sourceUrl ? SourceType.RSS_SUMMARY : SourceType.AI_GENERATED;
 
     const slug = await uniqueSlug(generated.slug || 'article');
+    const categoryId = await resolveSuggestedCategory(generated.suggestedCategory, validated.categoryId);
 
     // Create Article
     const article = await prisma.article.create({
@@ -74,7 +87,7 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
         seoDescription: generated.seoDescription || null,
         status: ArticleStatus.PENDING_APPROVAL,
         sourceType,
-        categoryId: validated.categoryId,
+        categoryId,
         authorId: session.user.id,
         readTime: estimateReadTime(generated.contentHtml),
       },

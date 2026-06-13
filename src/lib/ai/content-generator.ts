@@ -147,10 +147,26 @@ HTML: <h2>, <h3>, <p>, <ul><li>, <strong>, <blockquote>. Χωρίς <html>/<body
 
 ━━━ ΠΑΡΑΜΕΤΡΟΙ ━━━
 
-Κατηγορία: ${options.categoryName}
+Κατηγορία πηγής: ${options.categoryName}
 Ύφος: ${toneInstructions[options.tone]}
 Τύπος: ${articleTypeInstructions[options.articleType]}
 Στόχος λέξεων στο contentHtml: ${wordCount} (υποχρεωτικό — μην το παραβείς)
+
+━━━ ΚΑΤΗΓΟΡΙΟΠΟΙΗΣΗ ━━━
+
+Διάβασε το θέμα και επέλεξε την ΚΑΤΑΛΛΗΛΟΤΕΡΗ κατηγορία για το περιεχόμενο του άρθρου.
+Διαθέσιμες κατηγορίες (επέλεξε ΑΚΡΙΒΩΣ μία):
+AI | Τεχνολογία | Οικονομία | Επιχειρηματικότητα | Ελλάδα | Κόσμος | Viral | Απόψεις
+
+Κριτήρια:
+• AI → αν το θέμα αφορά τεχνητή νοημοσύνη, machine learning, LLMs, robotics
+• Τεχνολογία → software, hardware, cybersecurity, startups tech, gadgets
+• Οικονομία → χρηματαγορές, ΑΕΠ, πληθωρισμός, τράπεζες, νομισματική πολιτική
+• Επιχειρηματικότητα → εταιρείες, M&A, CEOs, startups, επενδύσεις, strategy
+• Ελλάδα → ελληνική πολιτική, ελληνική οικονομία, ελληνική κοινωνία
+• Κόσμος → διεθνής πολιτική, πόλεμοι, κυβερνήσεις, γεωπολιτική
+• Viral → κοινωνικά φαινόμενα, trending, pop culture, lifestyle
+• Απόψεις → editorial, γνώμη, ανάλυση με σαφή θέση
 
 ━━━ JSON OUTPUT FORMAT ━━━
 
@@ -166,7 +182,8 @@ HTML: <h2>, <h3>, <p>, <ul><li>, <strong>, <blockquote>. Χωρίς <html>/<body
   "seoDescription": "Meta description max 155 χαρακτήρες",
   "facebookPost": "${options.generateFacebookPost ? 'Hook + γεγονός + ερώτηση κοινού' : ''}",
   "imagePrompt": "Photorealistic news image description in English for DALL-E, scene without text",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+  "suggestedCategory": "μια από: AI | Τεχνολογία | Οικονομία | Επιχειρηματικότητα | Ελλάδα | Κόσμος | Viral | Απόψεις"
 }`;
 
   const isGreekSource = options.sourceLanguage === 'EL' || options.sourceCountry === 'GR';

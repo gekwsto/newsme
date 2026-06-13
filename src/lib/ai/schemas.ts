@@ -60,6 +60,13 @@ export type GenerateInput = z.infer<typeof GenerateInputSchema>;
 
 // ─── AI response schema ───────────────────────────────────────────────────────
 
+export const CATEGORY_NAMES = [
+  'AI', 'Τεχνολογία', 'Οικονομία', 'Επιχειρηματικότητα',
+  'Ελλάδα', 'Κόσμος', 'Viral', 'Απόψεις',
+] as const;
+
+export type CategoryName = (typeof CATEGORY_NAMES)[number];
+
 export const GeneratedArticleSchema = z.object({
   title: z.string().min(1),
   slug: z.string().min(1),
@@ -71,6 +78,7 @@ export const GeneratedArticleSchema = z.object({
   facebookPost: z.string(),
   imagePrompt: z.string(),
   tags: z.array(z.string()).default([]),
+  suggestedCategory: z.string().optional(),
 });
 
 export type GeneratedArticle = z.infer<typeof GeneratedArticleSchema>;

@@ -68,11 +68,14 @@ export async function generateArticleImage(
     n: 1,
     size,
     ...(model === 'dall-e-3' ? { quality } : {}),
-    response_format: 'url',
   });
 
-  const url = response.data?.[0]?.url;
-  if (!url) throw new Error('No image URL returned from OpenAI');
+  const imgData = response.data?.[0];
+  const url = imgData?.url;
+  if (!url) {
+    if (imgData?.b64_json) throw new Error('OpenAI returned base64 image — set IMAGE_MODEL=dall-e-3 for URL output');
+    throw new Error('No image URL returned from OpenAI');
+  }
 
   void logEvent({
     service: SERVICE.OPENAI,

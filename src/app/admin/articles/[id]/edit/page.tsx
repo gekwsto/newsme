@@ -46,6 +46,7 @@ export default async function ArticleEditPage({
           categories={categories}
           imageSlot={
             <ImageManager
+              key="image-manager"
               articleId={article.id}
               articleStatus={article.status}
               currentImageUrl={article.generatedImageUrl ?? article.coverImage ?? null}

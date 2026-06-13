@@ -20,6 +20,18 @@ async function requireAuth() {
   return session.user;
 }
 
+async function resolveSuggestedCategory(
+  suggestedCategory: string | undefined,
+  fallbackId: string
+): Promise<string> {
+  if (!suggestedCategory) return fallbackId;
+  const cat = await prisma.category.findFirst({
+    where: { name: suggestedCategory },
+    select: { id: true },
+  });
+  return cat?.id ?? fallbackId;
+}
+
 function estimateReadTime(html: string): number {
   const wordCount = html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).length;
   return Math.max(1, Math.ceil(wordCount / 200));
@@ -469,6 +481,7 @@ export async function generateDraftFromDiscoveredArticle(
     });
 
     const slug = await uniqueSlug(generated.slug || 'article');
+    const categoryId = await resolveSuggestedCategory(generated.suggestedCategory, discovered.categoryId);
 
     const hasRssImage = Boolean(discovered.imageUrl);
     const article = await prisma.article.create({
@@ -482,7 +495,7 @@ export async function generateDraftFromDiscoveredArticle(
         seoDescription: generated.seoDescription || null,
         status: ArticleStatus.PENDING_APPROVAL,
         sourceType: SourceType.RSS_SUMMARY,
-        categoryId: discovered.categoryId,
+        categoryId,
         authorId: user.id,
         readTime: estimateReadTime(generated.contentHtml),
         suggestedImageUrl: discovered.imageUrl || null,

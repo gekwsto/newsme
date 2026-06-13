@@ -13,6 +13,8 @@ export interface PrismaArticleLike {
   aiCommentary: string | null;
   readTime: number;
   generatedImageUrl: string | null;
+  coverImage: string | null;
+  publishedAt: Date | null;
   createdAt: Date;
   category: PrismaCategory;
   author: PrismaUser;
@@ -38,9 +40,9 @@ export function mapPrismaArticle(a: PrismaArticleLike): Article {
     content: a.content,
     category,
     author,
-    publishedAt: a.createdAt.toISOString(),
+    publishedAt: (a.publishedAt ?? a.createdAt).toISOString(),
     readTime: a.readTime,
-    imageUrl: a.generatedImageUrl ?? undefined,
+    imageUrl: a.generatedImageUrl ?? a.coverImage ?? undefined,
     tags: a.tags?.map((t) => t.tag.name) ?? [],
     aiCommentary: a.aiCommentary ?? undefined,
     views: 0,
@@ -59,6 +61,8 @@ export const ARTICLE_PUBLIC_SELECT = {
   aiCommentary: true,
   readTime: true,
   generatedImageUrl: true,
+  coverImage: true,
+  publishedAt: true,
   createdAt: true,
   category: { select: { name: true, slug: true, color: true } },
   author: { select: { name: true } },
