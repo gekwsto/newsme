@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, ChevronUp, ChevronDown, Trash2, Play, X,
@@ -71,13 +72,19 @@ function localDatetimeDefault() {
 }
 
 export default function QueueClient({ queueItems: initial, readyArticles, recentHistory }: QueueClientProps) {
+  const router = useRouter();
   const [items, setItems] = useState<QueueItem[]>(initial);
   const [isPending, startTransition] = useTransition();
   const [actionId, setActionId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [startTime, setStartTime] = useState(localDatetimeDefault());
-  const [interval, setInterval] = useState(20);
+  const [intervalMin, setIntervalMin] = useState(20);
   const [expandedContent, setExpandedContent] = useState<string | null>(null);
+
+  // Sync local state when Server Component re-renders after router.refresh()
+  useEffect(() => {
+    setItems(initial);
+  }, [initial]);
 
   const act = (id: string | null, fn: () => Promise<void>) => {
     setMsg(null);
@@ -93,6 +100,7 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       const res = await addToQueue(articleId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setMsg({ type: 'ok', text: 'Προστέθηκε στην ουρά' });
+      router.refresh();
     });
 
   const handleRemove = (itemId: string) =>
@@ -100,19 +108,32 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       const res = await removeFromQueue(itemId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
+      router.refresh();
     });
 
   const handleMove = (itemId: string, dir: 'up' | 'down') =>
     act(itemId, async () => {
       const res = await moveQueueItem(itemId, dir);
-      if (!res.ok) setMsg({ type: 'err', text: res.error });
+      if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
+      // Optimistic local swap — router.refresh() will sync final state
+      setItems((prev) => {
+        const idx = prev.findIndex((i) => i.id === itemId);
+        if (idx === -1) return prev;
+        const target = dir === 'up' ? idx - 1 : idx + 1;
+        if (target < 0 || target >= prev.length) return prev;
+        const next = [...prev];
+        [next[idx], next[target]] = [next[target], next[idx]];
+        return next;
+      });
+      router.refresh();
     });
 
   const handleSchedule = () =>
     act('schedule', async () => {
-      const res = await scheduleQueue(new Date(startTime).toISOString(), interval);
+      const res = await scheduleQueue(new Date(startTime).toISOString(), intervalMin);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setMsg({ type: 'ok', text: `Ουρά προγραμματίστηκε — ξεκινά ${fmt(new Date(startTime))}` });
+      router.refresh();
     });
 
   const handlePublishNow = (itemId: string) =>
@@ -121,6 +142,7 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
       setMsg({ type: 'ok', text: 'Δημοσιεύτηκε!' });
+      router.refresh();
     });
 
   const handleCancel = (itemId: string) =>
@@ -128,6 +150,7 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       const res = await cancelQueueItem(itemId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
+      router.refresh();
     });
 
   const inputClass =
@@ -137,10 +160,10 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
 
   // Preview scheduled times
   const previewTimes: string[] = [];
-  if (startTime && interval > 0 && items.length > 0) {
+  if (startTime && intervalMin > 0 && items.length > 0) {
     const base = new Date(startTime);
     for (let i = 0; i < Math.min(items.length, 8); i++) {
-      previewTimes.push(fmt(new Date(base.getTime() + i * interval * 60 * 1000)));
+      previewTimes.push(fmt(new Date(base.getTime() + i * intervalMin * 60 * 1000)));
     }
   }
 
@@ -360,17 +383,17 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
                   type="number"
                   min={1}
                   max={1440}
-                  value={interval}
-                  onChange={(e) => setInterval(Number(e.target.value))}
+                  value={intervalMin}
+                  onChange={(e) => setIntervalMin(Number(e.target.value))}
                   className={`${inputClass} w-24`}
                 />
                 <div className="flex gap-1">
                   {[15, 20, 30, 60].map((v) => (
                     <button
                       key={v}
-                      onClick={() => setInterval(v)}
+                      onClick={() => setIntervalMin(v)}
                       className={`text-xs px-2 py-1 rounded-lg transition-colors ${
-                        interval === v
+                        intervalMin === v
                           ? 'bg-red-600 text-white'
                           : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                       }`}
