@@ -94,7 +94,7 @@ export default async function Footer() {
                 { label: 'Όλα τα Άρθρα', href: '/articles' },
                 { label: 'Σχετικά με εμάς', href: '/about' },
                 { label: 'Επικοινωνία', href: '/contact' },
-                { label: 'Πολιτική Απορρήτου', href: '/privacy' },
+                { label: 'Πολιτική Απορρήτου', href: '/privacy-policy' },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="text-sm hover:text-white transition-colors">

@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, refresh } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { FacebookClient } from '@/lib/social/facebook';
@@ -8,6 +8,16 @@ import { logEvent, SERVICE } from '@/lib/monitoring/events';
 import { ArticleStatus, SocialPostStatus, QueueItemStatus } from '@/generated/prisma/enums';
 
 type Result = { ok: true } | { ok: false; error: string };
+
+const QUEUE_ITEM_INCLUDE = {
+  article: {
+    select: {
+      id: true, title: true, slug: true, status: true,
+      category: { select: { name: true, color: true } },
+    },
+  },
+  socialPost: { select: { id: true, content: true, status: true, platform: true } },
+} as const;
 
 async function requireAuth() {
   const session = await auth();
@@ -20,7 +30,9 @@ function revalidateQueue() {
   revalidatePath('/admin/approvals');
 }
 
-export async function addToQueue(articleId: string): Promise<Result> {
+export async function addToQueue(articleId: string): Promise<
+  { ok: true; item: Awaited<ReturnType<typeof prisma.publishQueueItem.findUniqueOrThrow>> } | { ok: false; error: string }
+> {
   try {
     await requireAuth();
 
@@ -63,7 +75,7 @@ export async function addToQueue(articleId: string): Promise<Result> {
     const nextPosition = (lastItem?.queuePosition ?? 0) + 1;
     const fbPost = article.socialPosts[0];
 
-    await prisma.publishQueueItem.create({
+    const created = await prisma.publishQueueItem.create({
       data: {
         articleId,
         socialPostId: fbPost?.id ?? null,
@@ -71,6 +83,7 @@ export async function addToQueue(articleId: string): Promise<Result> {
         priority: nextPosition,
         status: QueueItemStatus.QUEUED,
       },
+      include: QUEUE_ITEM_INCLUDE,
     });
 
     void logEvent({
@@ -82,7 +95,8 @@ export async function addToQueue(articleId: string): Promise<Result> {
     });
 
     revalidateQueue();
-    return { ok: true };
+    refresh();
+    return { ok: true, item: created };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
@@ -126,6 +140,7 @@ export async function removeFromQueue(queueItemId: string): Promise<Result> {
     });
 
     revalidateQueue();
+    refresh();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
@@ -170,13 +185,16 @@ export async function moveQueueItem(queueItemId: string, direction: 'up' | 'down
     ]);
 
     revalidateQueue();
+    refresh();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
 }
 
-export async function scheduleQueue(startTime: string, intervalMinutes: number): Promise<Result> {
+export async function scheduleQueue(startTime: string, intervalMinutes: number): Promise<
+  { ok: true; items: Awaited<ReturnType<typeof prisma.publishQueueItem.findMany>> } | { ok: false; error: string }
+> {
   try {
     await requireAuth();
 
@@ -206,6 +224,12 @@ export async function scheduleQueue(startTime: string, intervalMinutes: number):
       )
     );
 
+    const updated = await prisma.publishQueueItem.findMany({
+      where: { status: { in: [QueueItemStatus.QUEUED, QueueItemStatus.SCHEDULED] } },
+      orderBy: [{ priority: 'asc' }, { queuePosition: 'asc' }],
+      include: QUEUE_ITEM_INCLUDE,
+    });
+
     void logEvent({
       service: SERVICE.SCHEDULER,
       type: 'queue_scheduled',
@@ -215,7 +239,8 @@ export async function scheduleQueue(startTime: string, intervalMinutes: number):
     });
 
     revalidateQueue();
-    return { ok: true };
+    refresh();
+    return { ok: true, items: updated };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
@@ -228,6 +253,7 @@ export async function publishQueueItemNow(queueItemId: string): Promise<Result> 
     revalidateQueue();
     revalidatePath('/');
     revalidatePath('/articles');
+    refresh();
     return result;
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
@@ -252,6 +278,7 @@ export async function cancelQueueItem(queueItemId: string): Promise<Result> {
     });
 
     revalidateQueue();
+    refresh();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };

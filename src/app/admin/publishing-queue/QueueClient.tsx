@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, ChevronUp, ChevronDown, Trash2, Play, X,
   Calendar, Clock, FileText, Loader2, CheckCircle2,
-  AlertTriangle, Info,
+  AlertTriangle, Info, Zap,
 } from 'lucide-react';
 import {
   addToQueue, removeFromQueue, moveQueueItem,
   scheduleQueue, publishQueueItemNow, cancelQueueItem,
 } from '@/actions/queue';
+import { runScheduler } from '@/actions/scheduler';
 
 type Category = { name: string; color: string };
 
@@ -72,19 +72,16 @@ function localDatetimeDefault() {
 }
 
 export default function QueueClient({ queueItems: initial, readyArticles, recentHistory }: QueueClientProps) {
-  const router = useRouter();
   const [items, setItems] = useState<QueueItem[]>(initial);
+  const [ready, setReady] = useState<ReadyArticle[]>(readyArticles);
   const [isPending, startTransition] = useTransition();
   const [actionId, setActionId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [startTime, setStartTime] = useState(localDatetimeDefault());
   const [intervalMin, setIntervalMin] = useState(20);
   const [expandedContent, setExpandedContent] = useState<string | null>(null);
-
-  // Sync local state when Server Component re-renders after router.refresh()
-  useEffect(() => {
-    setItems(initial);
-  }, [initial]);
+  const [isRunning, startRun] = useTransition();
+  const [runResult, setRunResult] = useState<{ published: number; failed: number } | null>(null);
 
   const act = (id: string | null, fn: () => Promise<void>) => {
     setMsg(null);
@@ -99,8 +96,10 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
     act(articleId, async () => {
       const res = await addToQueue(articleId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
+      // Server returned the new item — add directly to state
+      setItems((prev) => [...prev, res.item as unknown as QueueItem]);
+      setReady((prev) => prev.filter((a) => a.id !== articleId));
       setMsg({ type: 'ok', text: 'Προστέθηκε στην ουρά' });
-      router.refresh();
     });
 
   const handleRemove = (itemId: string) =>
@@ -108,14 +107,13 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       const res = await removeFromQueue(itemId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
-      router.refresh();
     });
 
   const handleMove = (itemId: string, dir: 'up' | 'down') =>
     act(itemId, async () => {
       const res = await moveQueueItem(itemId, dir);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
-      // Optimistic local swap — router.refresh() will sync final state
+      // Optimistic local swap
       setItems((prev) => {
         const idx = prev.findIndex((i) => i.id === itemId);
         if (idx === -1) return prev;
@@ -125,15 +123,15 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
         [next[idx], next[target]] = [next[target], next[idx]];
         return next;
       });
-      router.refresh();
     });
 
   const handleSchedule = () =>
     act('schedule', async () => {
       const res = await scheduleQueue(new Date(startTime).toISOString(), intervalMin);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
+      // Server returned updated items with SCHEDULED status
+      setItems(res.items as unknown as QueueItem[]);
       setMsg({ type: 'ok', text: `Ουρά προγραμματίστηκε — ξεκινά ${fmt(new Date(startTime))}` });
-      router.refresh();
     });
 
   const handlePublishNow = (itemId: string) =>
@@ -142,7 +140,6 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
       setMsg({ type: 'ok', text: 'Δημοσιεύτηκε!' });
-      router.refresh();
     });
 
   const handleCancel = (itemId: string) =>
@@ -150,8 +147,36 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
       const res = await cancelQueueItem(itemId);
       if (!res.ok) { setMsg({ type: 'err', text: res.error }); return; }
       setItems((prev) => prev.filter((i) => i.id !== itemId));
-      router.refresh();
     });
+
+  const handleRunScheduler = () => {
+    setMsg(null);
+    setRunResult(null);
+    startRun(async () => {
+      const res = await runScheduler();
+      setRunResult({ published: res.published, failed: res.failed });
+      if (res.published > 0) {
+        setItems((prev) =>
+          prev.filter((i) => !res.details.some((d) => d.id === i.id && d.ok))
+        );
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    const run = async () => {
+      const res = await runScheduler();
+      setRunResult({ published: res.published, failed: res.failed });
+      if (res.published > 0) {
+        setItems((prev) =>
+          prev.filter((i) => !res.details.some((d) => d.id === i.id && d.ok))
+        );
+      }
+    };
+    const id = setInterval(run, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const inputClass =
     'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 transition-colors';
@@ -167,8 +192,45 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
     }
   }
 
+  const overdueItems = items.filter(
+    (i) => i.status === 'SCHEDULED' && i.scheduledFor && new Date(i.scheduledFor) <= new Date()
+  );
+
   return (
     <div className="space-y-8">
+      {/* Overdue warning + Run Scheduler */}
+      {overdueItems.length > 0 && (
+        <div className="flex items-center justify-between gap-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+            <AlertTriangle size={15} />
+            <span>
+              <strong>{overdueItems.length}</strong> άρθρ{overdueItems.length === 1 ? 'ο' : 'α'} έπρεπε να δημοσιευτ{overdueItems.length === 1 ? 'εί' : 'ούν'} — τρέξε τον scheduler τώρα ή περίμενε ≤1 λεπτό.
+            </span>
+          </div>
+          <button
+            onClick={handleRunScheduler}
+            disabled={isRunning}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded-lg px-3 py-1.5 transition-colors"
+          >
+            {isRunning ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            Εκτέλεση τώρα
+          </button>
+        </div>
+      )}
+
+      {runResult && (
+        <div className="flex items-center gap-2 text-sm px-4 py-3 rounded-xl border"
+          style={{
+            background: runResult.failed === 0 ? '#f0fdf4' : '#fef2f2',
+            borderColor: runResult.failed === 0 ? '#bbf7d0' : '#fecaca',
+            color: runResult.failed === 0 ? '#166534' : '#991b1b',
+          }}>
+          {runResult.failed === 0 ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+          Scheduler: {runResult.published} δημοσιεύτηκαν, {runResult.failed} απέτυχαν
+          <button onClick={() => setRunResult(null)} className="ml-auto opacity-60 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
+
       {msg && (
         <div
           className="flex items-center gap-2 text-sm px-4 py-3 rounded-xl border"
@@ -440,16 +502,16 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3">
             <h3 className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
               <FileText size={13} />
-              Έτοιμα για Ουρά ({readyArticles.length})
+              Έτοιμα για Ουρά ({ready.length})
             </h3>
 
-            {readyArticles.length === 0 ? (
+            {ready.length === 0 ? (
               <p className="text-xs text-slate-400 text-center py-4">
                 Δεν υπάρχουν εγκεκριμένα άρθρα εκτός ουράς.
               </p>
             ) : (
               <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
-                {readyArticles.map((a) => (
+                {ready.map((a) => (
                   <div
                     key={a.id}
                     className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg px-3 py-2.5 transition-colors group"
