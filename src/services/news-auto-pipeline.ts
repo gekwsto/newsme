@@ -56,6 +56,24 @@ async function fetchFeedWithTimeout(url: string, name: string) {
   }
 }
 
+export interface ScoreStats {
+  min: number;
+  max: number;
+  average: number;
+  threshold: number;
+  passedCount: number;
+  rejectedCount: number;
+}
+
+export interface CandidateSummary {
+  title: string;
+  sourceName: string;
+  rawScore: number;
+  normalizedScore: number;
+  passed: boolean;
+  rejectReason?: string;
+}
+
 export interface PipelineRunResult {
   ok: boolean;
   scannedFeeds: number;
@@ -67,6 +85,8 @@ export interface PipelineRunResult {
   facebookPosted: number;
   reason?: string;
   error?: string;
+  scoreStats?: ScoreStats;
+  topCandidates?: CandidateSummary[];
 }
 
 async function _runPipeline(): Promise<PipelineRunResult> {
@@ -224,27 +244,88 @@ async function _runPipeline(): Promise<PipelineRunResult> {
 
   plog('ai_scoring_start', { batch: toScore.length });
   const scores = await scoreArticles(toScore);
-  const threshold = settings.minimumImportanceScore * 10;
-  plog('ai_scoring_done', { scored: scores.length, threshold });
 
-  const qualifiedItems = filtered
-    .map(({ item }) => {
-      const score = scores.find((s) => s.id === item.url);
-      return { item, aiScore: score?.overallScore ?? 0 };
-    })
-    .filter(({ aiScore }) => aiScore >= threshold)
-    .sort((a, b) => b.aiScore - a.aiScore)
+  if (scores.length === 0) {
+    plog('ai_scoring_failed', { reason: 'scoreArticles returned empty — parse error or API failure' });
+  }
+
+  // Detect if AI returned 0-10 scale instead of 0-100 (safety net)
+  const rawMax = scores.length > 0 ? Math.max(...scores.map((s) => s.overallScore)) : 0;
+  const needsScale = rawMax > 0 && rawMax <= 10;
+  const scaleMultiplier = needsScale ? 10 : 1;
+
+  // minimumImportanceScore is stored as 0-100 in the DB — compare directly
+  const threshold = settings.minimumImportanceScore;
+
+  plog('ai_scoring_done', {
+    scored: scores.length,
+    rawMax,
+    scaleDetected: needsScale ? '0-10 (scaling ×10)' : '0-100 (no scaling)',
+    threshold,
+    rawScores: scores.slice(0, 5).map((s) => ({ id: s.id.slice(-40), raw: s.overallScore, normalized: s.overallScore * scaleMultiplier })),
+  });
+
+  const scoredFiltered = filtered.map(({ item }) => {
+    const score = scores.find((s) => s.id === item.url);
+    const rawScore = score?.overallScore ?? 0;
+    const normalizedScore = rawScore * scaleMultiplier;
+    const passed = normalizedScore >= threshold;
+    return {
+      item,
+      rawScore,
+      normalizedScore,
+      passed,
+      rejectReason: !score ? 'no_ai_score' : !passed ? `score ${normalizedScore} < threshold ${threshold}` : undefined,
+    };
+  });
+
+  const qualifiedItems = scoredFiltered
+    .filter((x) => x.passed)
+    .sort((a, b) => b.normalizedScore - a.normalizedScore)
     .slice(0, remaining);
 
-  const rejected = filtered.length - qualifiedItems.length;
+  const allScores = scoredFiltered.map((x) => x.normalizedScore);
+  const scoreStats: ScoreStats = {
+    min: allScores.length > 0 ? Math.min(...allScores) : 0,
+    max: allScores.length > 0 ? Math.max(...allScores) : 0,
+    average: allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0,
+    threshold,
+    passedCount: qualifiedItems.length,
+    rejectedCount: scoredFiltered.length - qualifiedItems.length,
+  };
+
+  const topCandidates: CandidateSummary[] = scoredFiltered
+    .sort((a, b) => b.normalizedScore - a.normalizedScore)
+    .slice(0, 10)
+    .map((x) => ({
+      title: x.item.title.slice(0, 100),
+      sourceName: x.item.sourceName,
+      rawScore: x.rawScore,
+      normalizedScore: x.normalizedScore,
+      passed: x.passed,
+      rejectReason: x.rejectReason,
+    }));
+
+  const rejected = scoredFiltered.length - qualifiedItems.length;
+
   plog('ai_score_filter', {
-    qualified: qualifiedItems.length,
-    rejected,
-    topScores: qualifiedItems.slice(0, 3).map(({ item, aiScore }) => ({ title: item.title.slice(0, 60), aiScore })),
+    ...scoreStats,
+    topCandidates: topCandidates.slice(0, 5).map((c) => ({
+      title: c.title.slice(0, 60),
+      normalizedScore: c.normalizedScore,
+      passed: c.passed,
+    })),
   });
 
   if (qualifiedItems.length === 0) {
-    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: filtered.length, generated: 0, rejected, facebookPosted: 0, reason: `No items passed AI score threshold (${threshold}/100)` };
+    return {
+      ok: true,
+      scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length,
+      candidates: filtered.length, generated: 0, rejected, facebookPosted: 0,
+      reason: `No items passed AI score threshold (${threshold}/100)`,
+      scoreStats,
+      topCandidates,
+    };
   }
 
   // ── 5. Article generation ─────────────────────────────────────────────────
@@ -257,10 +338,10 @@ async function _runPipeline(): Promise<PipelineRunResult> {
   let articlesGenerated = 0;
   let facebookPosted = 0;
 
-  for (const { item, aiScore } of qualifiedItems) {
+  for (const { item, normalizedScore } of qualifiedItems) {
     if (articlesGenerated >= remaining) break;
 
-    plog('article_generation_start', { title: item.title.slice(0, 80), source: item.sourceName, aiScore });
+    plog('article_generation_start', { title: item.title.slice(0, 80), source: item.sourceName, score: normalizedScore });
 
     try {
       const topic = item.title + (item.excerpt ? '\n\n' + item.excerpt : '') + '\n\nΠηγή: ' + item.sourceName;
@@ -373,6 +454,8 @@ async function _runPipeline(): Promise<PipelineRunResult> {
     generated: articlesGenerated,
     rejected,
     facebookPosted,
+    scoreStats,
+    topCandidates,
   };
 
   const donePayload = { ...result, totalActiveFeeds, autoGenerationFeeds };
