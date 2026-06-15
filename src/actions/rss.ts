@@ -614,6 +614,7 @@ type SourceData = {
   reliabilityScore: number;
   feedSourceType: string;
   enabled?: boolean;
+  allowAutoGeneration?: boolean;
 };
 
 export type SourceMutationResult = { ok: true; id: string } | { ok: false; error: string };

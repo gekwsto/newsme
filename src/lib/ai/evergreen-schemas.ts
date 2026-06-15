@@ -74,6 +74,8 @@ export const GeneratedEvergreenSchema = z.object({
     newsletter: z.string(),
   }),
   imagePrompt: z.string(),
+  imageAltText: z.string().default(''),
+  imageTitle: z.string().default(''),
   tags: z.array(z.string()).default([]),
 });
 

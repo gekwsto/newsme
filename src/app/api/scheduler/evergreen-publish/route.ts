@@ -1,8 +1,5 @@
-import { runScheduler } from '@/actions/scheduler';
+import { runEvergreenPublisher } from '@/services/evergreen-publisher';
 
-// Called by Vercel Cron or external cron every minute.
-// Vercel sends: Authorization: Bearer <CRON_SECRET>
-// Manual/dev calls can use: x-cron-secret: <CRON_SECRET>
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (secret) {
@@ -15,13 +12,16 @@ export async function GET(request: Request) {
     }
   }
 
+  const url = new URL(request.url);
+  const force = url.searchParams.get('force') === 'true';
+
   try {
-    const result = await runScheduler();
+    const result = await runEvergreenPublisher(force);
     return Response.json(result);
   } catch (err) {
     return Response.json(
-      { ok: false, error: err instanceof Error ? err.message : 'Error' },
-      { status: 500 }
+      { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' },
+      { status: 500 },
     );
   }
 }

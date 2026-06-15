@@ -16,6 +16,7 @@ import ArticleCTA from '@/components/sections/ArticleCTA';
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
 import { formatDate } from '@/lib/utils';
+import ViewTracker from '@/components/ui/ViewTracker';
 
 export async function generateStaticParams() {
   const articles = await prisma.article.findMany({
@@ -162,6 +163,7 @@ export default async function ArticlePage({
 
   return (
     <>
+      <ViewTracker slug={slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />

@@ -6,6 +6,7 @@ import { formatRelativeDate } from '@/lib/utils';
 import SourceActions from './SourceActions';
 import AddSourceForm from './AddSourceForm';
 import FetchAllButton from '../news-discovery/FetchAllButton';
+import AutoGenBadge from './AutoGenBadge';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,18 @@ export default async function SourcesPage({ searchParams }: PageProps) {
       ...(type ? { feedSourceType: type } : {}),
     },
     orderBy: [{ enabled: 'desc' }, { name: 'asc' }],
-    include: {
+    select: {
+      id: true,
+      name: true,
+      url: true,
+      enabled: true,
+      allowAutoGeneration: true,
+      language: true,
+      country: true,
+      reliabilityScore: true,
+      feedSourceType: true,
+      lastFetchedAt: true,
+      categoryId: true,
       category: { select: { id: true, name: true, color: true } },
       _count: { select: { articles: true } },
     },
@@ -193,6 +205,7 @@ export default async function SourcesPage({ searchParams }: PageProps) {
 
                     <div className="flex flex-wrap items-center gap-4 mt-1.5 ml-4">
                       <ReliabilityBar score={source.reliabilityScore} />
+                      <AutoGenBadge sourceId={source.id} allowAutoGeneration={source.allowAutoGeneration} />
                       <span className="text-[10px] text-slate-400">
                         {source._count.articles} άρθρα
                       </span>

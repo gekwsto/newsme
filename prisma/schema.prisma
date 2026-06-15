@@ -161,6 +161,9 @@ model Article {
   faqJson             Json?
   searchIntent        String?
   estimatedDifficulty Int?
+  qualityScore       Float?
+  aiSeoScore         Float?
+  readabilityScore   Float?
   views               Int           @default(0)
   readTime          Int           @default(3)
   publishedAt       DateTime?
@@ -173,12 +176,13 @@ model Article {
   authorId String
   author   User    @relation(fields: [authorId], references: [id])
 
-  tags              ArticleTag[]
-  aiDraft           AiDraft?
-  socialPosts       SocialPost[]
-  approvals         Approval[]
-  scheduledPosts    ScheduledPost[]
-  publishQueueItems PublishQueueItem[]
+  tags                 ArticleTag[]
+  aiDraft              AiDraft?
+  socialPosts          SocialPost[]
+  approvals            Approval[]
+  scheduledPosts       ScheduledPost[]
+  publishQueueItems    PublishQueueItem[]
+  searchConsoleMetrics SearchConsoleMetric[]
 
   @@map("articles")
 }
@@ -239,22 +243,50 @@ model Approval {
 }
 
 model RssSource {
-  id               String              @id @default(cuid())
-  name             String
-  url              String              @unique
-  categoryId       String
-  category         Category            @relation(fields: [categoryId], references: [id])
-  enabled          Boolean             @default(true)
-  language         String              @default("EN")
-  country          String              @default("GLOBAL")
-  reliabilityScore Int                 @default(70)
-  feedSourceType   String              @default("NEWS")
-  lastFetchedAt    DateTime?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  articles         DiscoveredArticle[]
+  id                  String              @id @default(cuid())
+  name                String
+  url                 String              @unique
+  categoryId          String
+  category            Category            @relation(fields: [categoryId], references: [id])
+  enabled             Boolean             @default(true)
+  allowAutoGeneration Boolean             @default(true)
+  language            String              @default("EN")
+  country             String              @default("GLOBAL")
+  reliabilityScore    Int                 @default(70)
+  feedSourceType      String              @default("NEWS")
+  lastFetchedAt       DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  articles            DiscoveredArticle[]
 
   @@map("rss_sources")
+}
+
+model NewsAutomationSettings {
+  id                     String   @id @default(cuid())
+  rssScanIntervalMinutes Int      @default(60)
+  maxNewsPerDay          Int      @default(6)
+  publishMode            String   @default("DRAFT")
+  facebookAutoPost       Boolean  @default(false)
+  allowedPublishHours    Int[]    @default([10, 13, 15, 18, 21, 23])
+  minimumImportanceScore Int      @default(7)
+  dailyAiBudgetLimit     Float    @default(0.80)
+  isEnabled              Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("news_automation_settings")
+}
+
+model CategoryImageSettings {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  imageMode     String   @default("TEMPLATE")
+  templateColor String   @default("#6366f1")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("category_image_settings")
 }
 
 model DiscoveredArticle {
@@ -418,4 +450,42 @@ model SystemEvent {
   @@index([service, status, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@map("system_events")
+}
+
+model SearchConsoleMetric {
+  id              String   @id @default(cuid())
+  articleId       String
+  article         Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  keyword         String
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  ctr             Float    @default(0)
+  averagePosition Float    @default(0)
+  date            DateTime @db.Date
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([articleId, keyword, date])
+  @@index([articleId])
+  @@index([keyword])
+  @@index([date(sort: Desc)])
+  @@map("search_console_metrics")
+}
+
+model KeywordOpportunity {
+  id              String   @id @default(cuid())
+  keyword         String   @unique
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  ctr             Float    @default(0)
+  avgPosition     Float    @default(0)
+  clusterSlug     String?
+  topicSuggestion String?
+  status          String   @default("new")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([clusterSlug])
+  @@map("keyword_opportunities")
 }

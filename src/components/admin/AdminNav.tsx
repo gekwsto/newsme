@@ -21,6 +21,9 @@ import {
   TreePine,
   Brain,
   ListOrdered,
+  Settings,
+  ImageIcon,
+  Workflow,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,9 +39,12 @@ const navItems = [
   { href: '/admin/ai-generator', label: 'AI Generator', icon: Sparkles, exact: false },
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
   { href: '/admin/sources', label: 'RSS Sources', icon: Rss, exact: false },
+  { href: '/admin/news-settings', label: 'Auto Pipeline', icon: Workflow, exact: false },
+  { href: '/admin/pipeline-logs', label: 'Pipeline Logs', icon: Activity, exact: false },
+  { href: '/admin/image-settings', label: 'Image Settings', icon: ImageIcon, exact: false },
   { href: '/admin/social-posts', label: 'Social Posts', icon: MessageSquare, exact: false },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart2, exact: false },
-  { href: '/admin/operations', label: 'Operations', icon: Activity, exact: false },
+  { href: '/admin/operations', label: 'Operations', icon: Settings, exact: false },
   { href: '/admin/errors', label: 'Errors', icon: AlertTriangle, exact: false },
   { href: '/admin/readiness', label: 'Readiness', icon: ShieldCheck, exact: false },
   { href: '/admin/seo', label: 'SEO', icon: SearchCheck, exact: false },
