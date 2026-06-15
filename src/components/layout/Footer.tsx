@@ -127,7 +127,7 @@ export default async function Footer() {
         </div>
 
         <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p>© {year} ΑΙΣΧΟΛΙΑΣΜΟΣ — aisxoliasmos.com. Όλα τα δικαιώματα διατηρούνται.</p>
+          <p>© {year} ΑΙΣΧΟΛΙΑΣΜΟΣ — aisxoliasmos.gr. Όλα τα δικαιώματα διατηρούνται.</p>
           <p className="flex items-center gap-1">
             Φτιαγμένο με ❤️ στην Ελλάδα
           </p>

@@ -11,7 +11,7 @@ interface ShareButtonsProps {
 
 export default function ShareButtons({ title, slug }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `https://aisxoliasmos.com/article/${slug}`;
+  const shareUrl = `https://aisxoliasmos.gr/article/${slug}`;
 
   const handleCopy = async () => {
     await navigator.clipboard?.writeText(shareUrl);

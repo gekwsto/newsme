@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://aisxoliasmos.com'),
+  metadataBase: new URL('https://aisxoliasmos.gr'),
   title: {
     default: 'ΑΙΣΧΟΛΙΑΣΜΟΣ — Η επικαιρότητα με έξυπνο σχολιασμό',
     template: '%s | ΑΙΣΧΟΛΙΑΣΜΟΣ',
@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   description:
     'Ενημερωτικό portal για AI, Τεχνολογία, Οικονομία, Επιχειρηματικότητα και Επικαιρότητα. Έξυπνος σχολιασμός, καθημερινά.',
   keywords: ['AI', 'τεχνολογία', 'οικονομία', 'ειδήσεις', 'Ελλάδα', 'επιχειρηματικότητα'],
-  authors: [{ name: 'ΑΙΣΧΟΛΙΑΣΜΟΣ', url: 'https://aisxoliasmos.com' }],
+  authors: [{ name: 'ΑΙΣΧΟΛΙΑΣΜΟΣ', url: 'https://aisxoliasmos.gr' }],
   openGraph: {
     type: 'website',
     locale: 'el_GR',
-    url: 'https://aisxoliasmos.com',
+    url: 'https://aisxoliasmos.gr',
     siteName: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
     title: 'ΑΙΣΧΟΛΙΑΣΜΟΣ — Η επικαιρότητα με έξυπνο σχολιασμό',
     description:

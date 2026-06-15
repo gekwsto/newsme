@@ -4,7 +4,7 @@ import { canonicalUrl } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Όροι Χρήσης | ΑΙΣΧΟΛΙΑΣΜΟΣ',
-  description: 'Οι όροι και προϋποθέσεις χρήσης του aisxoliasmos.com.',
+  description: 'Οι όροι και προϋποθέσεις χρήσης του aisxoliasmos.gr.',
   alternates: { canonical: canonicalUrl('/terms') },
 };
 
@@ -26,7 +26,7 @@ export default function TermsPage() {
         {[
           {
             title: '1. Αποδοχή Όρων',
-            content: 'Με τη χρήση του aisxoliasmos.com αποδέχεστε πλήρως τους παρόντες όρους χρήσης. Αν δεν συμφωνείτε, παρακαλούμε να μην χρησιμοποιείτε τον ιστότοπο.',
+            content: 'Με τη χρήση του aisxoliasmos.gr αποδέχεστε πλήρως τους παρόντες όρους χρήσης. Αν δεν συμφωνείτε, παρακαλούμε να μην χρησιμοποιείτε τον ιστότοπο.',
           },
           {
             title: '2. Πνευματική Ιδιοκτησία',

@@ -74,7 +74,7 @@ export default function AIPolicyPage() {
 
       <div className="mt-10 bg-slate-50 rounded-xl p-6 border border-slate-200 text-sm">
         <p className="font-semibold text-slate-800 mb-3">Έχετε ερωτήσεις για τη χρήση AI;</p>
-        <p className="text-slate-600 mb-3">Επικοινωνήστε στο <a href="mailto:ai@aisxoliasmos.com" className="text-red-600 hover:underline">ai@aisxoliasmos.com</a></p>
+        <p className="text-slate-600 mb-3">Επικοινωνήστε στο <a href="mailto:ai@aisxoliasmos.gr" className="text-red-600 hover:underline">ai@aisxoliasmos.gr</a></p>
         <div className="flex flex-wrap gap-3">
           <Link href="/editorial-policy" className="text-red-600 hover:text-red-700 hover:underline">Συντακτική Πολιτική</Link>
           <Link href="/transparency" className="text-red-600 hover:text-red-700 hover:underline">Διαφάνεια</Link>

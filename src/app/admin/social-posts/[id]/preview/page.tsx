@@ -173,7 +173,7 @@ export default async function SocialPostPreviewPage({ params }: PageProps) {
             {/* Article meta */}
             <div className="px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5">
-                aisxoliasmos.com
+                aisxoliasmos.gr
               </p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">
                 {post.article.title}

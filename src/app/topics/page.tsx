@@ -10,7 +10,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Θέματα & Clusters | ΑΙΣΧΟΛΙΑΣΜΟΣ',
   description: 'Εξερευνήστε 20 θεματικά clusters με 500+ evergreen άρθρα για AI, Τεχνολογία, Επιχειρηματικότητα και Οικονομία.',
-  alternates: { canonical: 'https://aisxoliasmos.com/topics' },
+  alternates: { canonical: 'https://aisxoliasmos.gr/topics' },
 };
 
 export default async function TopicsIndexPage() {

@@ -30,7 +30,7 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Ιδιοκτησία</h2>
           <p className="text-slate-600 text-sm leading-relaxed">
-            Το ΑΙΣΧΟΛΙΑΣΜΟΣ (aisxoliasmos.com) είναι ανεξάρτητο ψηφιακό μέσο ενημέρωσης. Δεν ανήκει σε μεγάλο media group, πολιτικό κόμμα ή εταιρεία τεχνολογίας. Η ιδιοκτησία είναι ιδιωτική.
+            Το ΑΙΣΧΟΛΙΑΣΜΟΣ (aisxoliasmos.gr) είναι ανεξάρτητο ψηφιακό μέσο ενημέρωσης. Δεν ανήκει σε μεγάλο media group, πολιτικό κόμμα ή εταιρεία τεχνολογίας. Η ιδιοκτησία είναι ιδιωτική.
           </p>
         </section>
 
@@ -52,7 +52,7 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Πολιτική Διορθώσεων</h2>
           <p className="text-slate-600 text-sm leading-relaxed">
-            Όταν κάνουμε λάθη, τα διορθώνουμε άμεσα και διαφανώς. Κάθε διόρθωση αναφέρεται στο τέλος του άρθρου με σαφή αναφορά στο τι άλλαξε. Δεν διαγράφουμε άρθρα ή αποσπάσματα χωρίς αναφορά. Για να αναφέρετε λάθος: <a href="mailto:corrections@aisxoliasmos.com" className="text-red-600 hover:underline">corrections@aisxoliasmos.com</a>
+            Όταν κάνουμε λάθη, τα διορθώνουμε άμεσα και διαφανώς. Κάθε διόρθωση αναφέρεται στο τέλος του άρθρου με σαφή αναφορά στο τι άλλαξε. Δεν διαγράφουμε άρθρα ή αποσπάσματα χωρίς αναφορά. Για να αναφέρετε λάθος: <a href="mailto:corrections@aisxoliasmos.gr" className="text-red-600 hover:underline">corrections@aisxoliasmos.gr</a>
           </p>
         </section>
 
@@ -74,10 +74,10 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Επικοινωνία</h2>
           <dl className="text-sm text-slate-600 space-y-2">
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Γενικά:</dt><dd><a href="mailto:info@aisxoliasmos.com" className="text-red-600 hover:underline">info@aisxoliasmos.com</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Σύνταξη:</dt><dd><a href="mailto:editorial@aisxoliasmos.com" className="text-red-600 hover:underline">editorial@aisxoliasmos.com</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Διορθώσεις:</dt><dd><a href="mailto:corrections@aisxoliasmos.com" className="text-red-600 hover:underline">corrections@aisxoliasmos.com</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Τύπος:</dt><dd><a href="mailto:press@aisxoliasmos.com" className="text-red-600 hover:underline">press@aisxoliasmos.com</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Γενικά:</dt><dd><a href="mailto:info@aisxoliasmos.gr" className="text-red-600 hover:underline">info@aisxoliasmos.gr</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Σύνταξη:</dt><dd><a href="mailto:editorial@aisxoliasmos.gr" className="text-red-600 hover:underline">editorial@aisxoliasmos.gr</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Διορθώσεις:</dt><dd><a href="mailto:corrections@aisxoliasmos.gr" className="text-red-600 hover:underline">corrections@aisxoliasmos.gr</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Τύπος:</dt><dd><a href="mailto:press@aisxoliasmos.gr" className="text-red-600 hover:underline">press@aisxoliasmos.gr</a></dd></div>
           </dl>
         </section>
       </div>

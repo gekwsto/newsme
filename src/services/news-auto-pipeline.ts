@@ -5,6 +5,7 @@ import { scoreArticles } from '@/lib/ai/content-scorer';
 import { generateArticleContent } from '@/lib/ai/content-generator';
 import { FacebookClient } from '@/lib/social/facebook';
 import { logEvent, logOpenAIUsage, getMonthlyAiCosts, SERVICE } from '@/lib/monitoring/events';
+import { SITE_URL } from '@/lib/seo';
 import { ArticleStatus, ArticleType, DiscoveredStatus, SocialPostStatus, SourceType } from '@/generated/prisma/enums';
 import { getContentFiltersConfig } from '@/lib/content-filter';
 
@@ -258,7 +259,7 @@ export async function runNewsPipeline(): Promise<PipelineRunResult> {
         articlesGenerated++;
 
         if (settings.facebookAutoPost && generated.facebookPost && status === ArticleStatus.PUBLISHED) {
-          const articleUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/article/${slug}`;
+          const articleUrl = `${SITE_URL}/article/${slug}`;
           const fbResult = await FacebookClient.publish({ content: generated.facebookPost, link: articleUrl });
 
           const socialPost = await prisma.socialPost.create({

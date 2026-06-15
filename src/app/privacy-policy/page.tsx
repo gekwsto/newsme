@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
       <div className="prose prose-slate max-w-none text-sm leading-relaxed space-y-8">
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-base font-black text-slate-900 mb-3">1. Ποιος είναι υπεύθυνος επεξεργασίας</h2>
-          <p className="text-slate-600">Το ΑΙΣΧΟΛΙΑΣΜΟΣ (aisxoliasmos.com) είναι ο υπεύθυνος επεξεργασίας των προσωπικών δεδομένων που συλλέγονται μέσω αυτού του ιστότοπου. Επικοινωνία: <a href="mailto:privacy@aisxoliasmos.com" className="text-red-600 hover:underline">privacy@aisxoliasmos.com</a></p>
+          <p className="text-slate-600">Το ΑΙΣΧΟΛΙΑΣΜΟΣ (aisxoliasmos.gr) είναι ο υπεύθυνος επεξεργασίας των προσωπικών δεδομένων που συλλέγονται μέσω αυτού του ιστότοπου. Επικοινωνία: <a href="mailto:privacy@aisxoliasmos.gr" className="text-red-600 hover:underline">privacy@aisxoliasmos.gr</a></p>
         </section>
 
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
             <li>Εναντίωσης στην επεξεργασία</li>
             <li>Ανάκλησης συγκατάθεσης ανά πάσα στιγμή</li>
           </ul>
-          <p className="text-slate-600 mt-3">Άσκηση δικαιωμάτων: <a href="mailto:privacy@aisxoliasmos.com" className="text-red-600 hover:underline">privacy@aisxoliasmos.com</a></p>
+          <p className="text-slate-600 mt-3">Άσκηση δικαιωμάτων: <a href="mailto:privacy@aisxoliasmos.gr" className="text-red-600 hover:underline">privacy@aisxoliasmos.gr</a></p>
         </section>
 
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
@@ -85,7 +85,7 @@ export default function PrivacyPolicyPage() {
 
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-base font-black text-slate-900 mb-3">8. Επικοινωνία</h2>
-          <p className="text-slate-600">Για οποιαδήποτε ερώτηση σχετικά με αυτή την πολιτική ή τα δικαιώματά σας: <a href="mailto:privacy@aisxoliasmos.com" className="text-red-600 hover:underline">privacy@aisxoliasmos.com</a></p>
+          <p className="text-slate-600">Για οποιαδήποτε ερώτηση σχετικά με αυτή την πολιτική ή τα δικαιώματά σας: <a href="mailto:privacy@aisxoliasmos.gr" className="text-red-600 hover:underline">privacy@aisxoliasmos.gr</a></p>
         </section>
       </div>
     </div>

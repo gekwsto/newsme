@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { SocialPostStatus } from '@/generated/prisma/enums';
 import { publishToFacebook } from '@/lib/facebook/publisher';
+import { SITE_URL } from '@/lib/seo';
 
 async function requireAuth() {
   const session = await auth();
@@ -141,8 +142,7 @@ export async function publishSocialPostToFacebook(id: string): Promise<ActionRes
       return { ok: false, error: 'Μόνο εγκεκριμένα posts μπορούν να δημοσιευτούν' };
     }
 
-    const siteUrl = process.env.SITE_URL?.replace(/\/$/, '');
-    const link = siteUrl ? `${siteUrl}/articles/${post.article.slug}` : undefined;
+    const link = `${SITE_URL}/article/${post.article.slug}`;
 
     let externalPostId: string | undefined;
 

@@ -17,7 +17,7 @@ type RawItem = {
 const parser = new Parser<Record<string, unknown>, RawItem>({
   timeout: 15000,
   headers: {
-    'User-Agent': 'AiSxoliasmos/1.0 RSS Reader (+https://aisxoliasmos.com)',
+    'User-Agent': 'AiSxoliasmos/1.0 RSS Reader (+https://aisxoliasmos.gr)',
     Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
   },
   customFields: {

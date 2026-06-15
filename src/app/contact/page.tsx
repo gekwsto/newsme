@@ -37,10 +37,10 @@ export default function ContactPage() {
             </div>
             <h3 className="font-bold text-slate-900 text-sm mb-1">Email</h3>
             <a
-              href="mailto:info@aisxoliasmos.com"
+              href="mailto:info@aisxoliasmos.gr"
               className="text-red-600 hover:text-red-700 text-sm"
             >
-              info@aisxoliasmos.com
+              info@aisxoliasmos.gr
             </a>
           </div>
 
@@ -86,8 +86,8 @@ export default function ContactPage() {
             <p className="font-semibold text-slate-700 mb-1">Για δημοσιογράφους</p>
             <p>
               Αν ψάχνετε για σχολιασμό από την ομάδα μας, επικοινωνήστε στο{' '}
-              <a href="mailto:press@aisxoliasmos.com" className="text-red-600">
-                press@aisxoliasmos.com
+              <a href="mailto:press@aisxoliasmos.gr" className="text-red-600">
+                press@aisxoliasmos.gr
               </a>
             </p>
           </div>
