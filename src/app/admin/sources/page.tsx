@@ -90,6 +90,7 @@ export default async function SourcesPage({ searchParams }: PageProps) {
   });
 
   const enabledCount = sources.filter((s) => s.enabled).length;
+  const autoCount = sources.filter((s) => s.enabled && s.allowAutoGeneration).length;
   const greekCount = sources.filter((s) => s.language === 'EL' || s.country === 'GR').length;
 
   const filterBase = (params: Record<string, string | undefined>) => {
@@ -118,6 +119,25 @@ export default async function SourcesPage({ searchParams }: PageProps) {
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <FetchAllButton />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Συνολικές Πηγές</p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{sources.length}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{greekCount} ελληνικές</p>
+          </div>
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">Ενεργές Πηγές</p>
+            <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{enabledCount}</p>
+            <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500 mt-0.5">{sources.length - enabledCount} ανενεργές</p>
+          </div>
+          <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/10 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-1">Auto Pipeline</p>
+            <p className="text-2xl font-black text-violet-700 dark:text-violet-400">{autoCount}</p>
+            <p className="text-[10px] text-violet-600/70 dark:text-violet-500 mt-0.5">από {enabledCount} ενεργές</p>
           </div>
         </div>
 
@@ -205,7 +225,7 @@ export default async function SourcesPage({ searchParams }: PageProps) {
 
                     <div className="flex flex-wrap items-center gap-4 mt-1.5 ml-4">
                       <ReliabilityBar score={source.reliabilityScore} />
-                      <AutoGenBadge sourceId={source.id} allowAutoGeneration={source.allowAutoGeneration} />
+                      <AutoGenBadge sourceId={source.id} allowAutoGeneration={source.allowAutoGeneration} enabled={source.enabled} />
                       <span className="text-[10px] text-slate-400">
                         {source._count.articles} άρθρα
                       </span>

@@ -249,7 +249,7 @@ model RssSource {
   categoryId          String
   category            Category            @relation(fields: [categoryId], references: [id])
   enabled             Boolean             @default(true)
-  allowAutoGeneration Boolean             @default(true)
+  allowAutoGeneration Boolean             @default(false)
   language            String              @default("EN")
   country             String              @default("GLOBAL")
   reliabilityScore    Int                 @default(70)
