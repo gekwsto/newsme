@@ -89,8 +89,9 @@ export async function computeTopicPerformanceFromDB(): Promise<TopicPerformanceR
   // For simplicity, we aggregate ContentScore data separately
   const scores = await prisma.contentScore.findMany({
     select: {
-      discussionScore: true,
-      facebookDiscussionScore: true,
+      facebookClickScore: true,
+      overallScore: true,
+      discoveredArticleId: true,
       discoveredArticle: {
         select: { title: true, category: { select: { name: true } } },
       },
@@ -142,8 +143,8 @@ export async function computeTopicPerformanceFromDB(): Promise<TopicPerformanceR
       if (word.length < 4) continue;
       if (!scoreMap.has(word)) scoreMap.set(word, { discussion: [], facebook: [] });
       const entry = scoreMap.get(word)!;
-      entry.discussion.push(s.discussionScore);
-      entry.facebook.push(s.facebookDiscussionScore);
+      entry.discussion.push(s.overallScore);
+      entry.facebook.push(s.facebookClickScore);
     }
   }
 

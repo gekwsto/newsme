@@ -28,8 +28,8 @@ const statusLabels: Record<string, string> = {
   IGNORED: 'Αγνοήθηκε',
 };
 
-type SortKey = 'overall' | 'viral' | 'discussion' | 'business' | 'search' | 'controversy' | 'facebook' | 'date';
-const VALID_SORTS: SortKey[] = ['overall', 'viral', 'discussion', 'business', 'search', 'controversy', 'facebook', 'date'];
+type SortKey = 'overall' | 'greek' | 'facebook' | 'search' | 'evergreen' | 'date';
+const VALID_SORTS: SortKey[] = ['overall', 'greek', 'facebook', 'search', 'evergreen', 'date'];
 
 type ArticleWithScore = Awaited<ReturnType<typeof fetchArticles>>[0];
 
@@ -55,14 +55,12 @@ function sortArticles(articles: ArticleWithScore[], sort: SortKey): ArticleWithS
   const getScore = (a: ArticleWithScore): number => {
     if (!a.score) return -1;
     switch (sort) {
-      case 'overall':     return a.score.overallScore;
-      case 'viral':       return a.score.viralScore;
-      case 'discussion':  return a.score.discussionScore;
-      case 'business':    return a.score.businessValueScore;
-      case 'search':      return a.score.searchPotentialScore;
-      case 'controversy': return a.score.controversyScore;
-      case 'facebook':    return a.score.facebookDiscussionScore;
-      default:            return a.score.overallScore;
+      case 'overall':   return a.score.overallScore;
+      case 'greek':     return a.score.greekInterestScore;
+      case 'facebook':  return a.score.facebookClickScore;
+      case 'search':    return a.score.searchPotentialScore;
+      case 'evergreen': return a.score.evergreenScore;
+      default:          return a.score.overallScore;
     }
   };
   return [...articles].sort((a, b) => getScore(b) - getScore(a));
@@ -124,11 +122,7 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
       prisma.discoveredArticle.findMany({
         where: {
           status: DiscoveredStatus.NEW,
-          OR: [
-            { score: { facebookDiscussionScore: { gte: 88 } } },
-            { score: { discussionScore: { gte: 88 } } },
-            { score: { controversyScore: { gte: 88 } } },
-          ],
+          score: { overallScore: { gte: 70 } },
         },
         include: {
           score: true,
@@ -142,9 +136,8 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
   const articles = sortArticles(rawArticles, validSort);
   const countMap = Object.fromEntries(counts.map((c) => [c.status, c._count.id]));
 
-  // Sort viral opportunities by best Facebook score
   const viralOpps = viralArticles.sort(
-    (a, b) => (b.score?.facebookDiscussionScore ?? 0) - (a.score?.facebookDiscussionScore ?? 0)
+    (a, b) => (b.score?.overallScore ?? 0) - (a.score?.overallScore ?? 0)
   );
 
   return (
@@ -160,15 +153,10 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
             </h2>
             <div className="space-y-2">
               {viralOpps.map((a) => {
-                const topScore = Math.max(
-                  a.score?.facebookDiscussionScore ?? 0,
-                  a.score?.discussionScore ?? 0,
-                  a.score?.controversyScore ?? 0
-                );
-                const reason =
-                  (a.score?.facebookDiscussionScore ?? 0) >= 88 ? `📘 Facebook Discussion ${a.score!.facebookDiscussionScore}` :
-                  (a.score?.discussionScore ?? 0) >= 88 ? `💬 Discussion ${a.score!.discussionScore}` :
-                  `⚡ Controversy ${a.score!.controversyScore}`;
+                const topScore = a.score?.overallScore ?? 0;
+                const reason = a.score
+                  ? `🇬🇷 ${a.score.greekInterestScore} · 🔍 ${a.score.searchPotentialScore} · 📘 ${a.score.facebookClickScore} · ⭐ ${a.score.overallScore}`
+                  : '';
                 return (
                   <div key={a.id} className="flex items-start gap-3">
                     <span
@@ -378,39 +366,16 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
                       <>
                         <div className="mt-2 flex flex-wrap items-center gap-1">
                           <OverallBadge score={article.score.overallScore} />
-                          <ScoreBadge icon="🔥" label="Viral Score" score={article.score.viralScore} />
-                          <ScoreBadge icon="💬" label="Discussion Score" score={article.score.discussionScore} />
-                          <ScoreBadge icon="⚡" label="Controversy" score={article.score.controversyScore} />
-                          <ScoreBadge icon="📘" label="Facebook Discussion" score={article.score.facebookDiscussionScore} />
-                          <ScoreBadge icon="💼" label="Business Value" score={article.score.businessValueScore} />
-                          <ScoreBadge icon="🔍" label="Search Potential" score={article.score.searchPotentialScore} />
+                          <ScoreBadge icon="🇬🇷" label="Ελληνικό Ενδιαφέρον (max 40)" score={article.score.greekInterestScore} />
+                          <ScoreBadge icon="🔍" label="Search Potential (max 30)" score={article.score.searchPotentialScore} />
+                          <ScoreBadge icon="📘" label="Facebook Click (max 20)" score={article.score.facebookClickScore} />
+                          <ScoreBadge icon="🌿" label="Evergreen (max 10)" score={article.score.evergreenScore} />
+                          {article.score.rejected && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                              ✗ {article.score.rejectReason || 'AUTO REJECTED'}
+                            </span>
+                          )}
                         </div>
-
-                        {/* Editorial insights */}
-                        {(article.score.whyThisMatters || article.score.bestFacebookAngle) && (
-                          <div className="mt-2 space-y-1">
-                            {article.score.whyThisMatters && (
-                              <div>
-                                <span className="text-[9px] font-bold tracking-wider uppercase text-gray-400 dark:text-gray-500">
-                                  WHY THIS MATTERS
-                                </span>
-                                <p className="text-xs text-gray-600 dark:text-gray-300 italic leading-snug">
-                                  {article.score.whyThisMatters}
-                                </p>
-                              </div>
-                            )}
-                            {article.score.bestFacebookAngle && (
-                              <div>
-                                <span className="text-[9px] font-bold tracking-wider uppercase text-indigo-400 dark:text-indigo-500">
-                                  BEST FACEBOOK ANGLE
-                                </span>
-                                <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium leading-snug">
-                                  {article.score.bestFacebookAngle}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
 
                         {article.score.reasoning && (
                           <p className="mt-1 text-[10px] text-gray-400 dark:text-gray-500 italic line-clamp-1">

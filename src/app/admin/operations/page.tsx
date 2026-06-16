@@ -101,14 +101,9 @@ async function fetchData() {
       message: { contains: 'Generation' } },
   });
 
-  // Viral Active: discovered articles with discussion/viral/controversy >= 88
   const viralActive = await prisma.contentScore.count({
     where: {
-      OR: [
-        { facebookDiscussionScore: { gte: 88 } },
-        { discussionScore: { gte: 88 } },
-        { controversyScore: { gte: 88 } },
-      ],
+      overallScore: { gte: 70 },
       discoveredArticle: { status: 'NEW' },
     },
   });

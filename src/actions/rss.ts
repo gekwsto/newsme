@@ -128,7 +128,7 @@ async function _clusterAndSave(): Promise<number> {
       excerpt: true,
       sourceId: true,
       source: { select: { name: true } },
-      score: { select: { viralScore: true } },
+      score: { select: { overallScore: true, facebookClickScore: true } },
     },
     take: 80,
     orderBy: { createdAt: 'desc' },
@@ -142,7 +142,7 @@ async function _clusterAndSave(): Promise<number> {
       title: a.title,
       excerpt: a.excerpt,
       sourceName: a.source.name,
-      viralScore: a.score?.viralScore ?? 0,
+      viralScore: a.score?.overallScore ?? 0,
     }))
   );
 
@@ -158,7 +158,7 @@ async function _clusterAndSave(): Promise<number> {
     const clusterArticles = articles.filter((a) => cluster.articleIds.includes(a.id));
     const sourceCount = new Set(clusterArticles.map((a) => a.sourceId)).size;
     const avgViral =
-      clusterArticles.reduce((s, a) => s + (a.score?.viralScore ?? 0), 0) /
+      clusterArticles.reduce((s, a) => s + (a.score?.overallScore ?? 0), 0) /
       Math.max(clusterArticles.length, 1);
     const now = new Date();
     const trendScore = calcTrendScore({
@@ -527,9 +527,9 @@ export async function generateDraftFromDiscoveredArticle(
         await prisma.postPerformance.create({
           data: {
             socialPostId: socialPost.id,
-            predictedReach: score.facebookDiscussionScore,
-            predictedComments: Math.round((score.controversyScore + score.discussionScore) / 2),
-            predictedShares: score.viralScore,
+            predictedReach: score.facebookClickScore,
+            predictedComments: score.overallScore,
+            predictedShares: score.overallScore,
           },
         });
       }
