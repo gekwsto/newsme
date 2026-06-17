@@ -9,8 +9,10 @@ import { scoreArticles } from '@/lib/ai/content-scorer';
 import { clusterArticles, calcTrendScore } from '@/lib/ai/trend-clusterer';
 import { getEditorialConfig } from '@/lib/editorial-config';
 import { getContentFiltersConfig, computeLocalScore } from '@/lib/content-filter';
+import { getSemanticMatrixConfig, computeSemanticScore } from '@/lib/semantic-filter';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
-import { ArticleStatus, SourceType, SocialPostStatus, DiscoveredStatus } from '@/generated/prisma/enums';
+import { ArticleStatus, SourceType, SocialPostStatus, DiscoveredStatus, TrainingDataType } from '@/generated/prisma/enums';
+import { captureTrainingExample } from '@/lib/training-capture';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -272,7 +274,7 @@ export async function fetchSourceNow(sourceId: string): Promise<FetchResult> {
 }
 
 export type FetchAllResult =
-  | { ok: true; results: Array<{ sourceName: string; newCount: number; error?: string }>; scored: number; preFiltered: number; clustered: number }
+  | { ok: true; results: Array<{ sourceName: string; newCount: number; error?: string }>; scored: number; preFiltered: number; semanticFiltered: number; clustered: number }
   | { ok: false; error: string };
 
 export async function fetchAllSources(): Promise<FetchAllResult> {
@@ -305,13 +307,15 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
       metadata: { sourceCount: sources.length, totalNew, errorCount },
     });
 
-    // Pre-filter then score
+    // Pre-filter → Semantic filter → AI score
     let scored = 0;
     let preFiltered = 0;
+    let semanticFiltered = 0;
     try {
       const filtersConfig = getContentFiltersConfig();
+      const semanticConfig = getSemanticMatrixConfig();
 
-      // Fetch unscored articles with category info for pre-filter
+      // Fetch unscored articles with category + source info
       const unscored = await prisma.discoveredArticle.findMany({
         where: { score: null, status: DiscoveredStatus.NEW },
         select: {
@@ -320,6 +324,7 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
           excerpt: true,
           url: true,
           category: { select: { name: true } },
+          source: { select: { name: true, reliabilityScore: true } },
         },
       });
 
@@ -334,8 +339,8 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
         });
         const existingTitles = recentTitles.map((a) => a.title);
 
-        // Compute localScore for every unscored article
-        const filterResults = unscored.map((a) =>
+        // ── Step 1: Local rule-based filter ───────────────────────────────
+        const localResults = unscored.map((a) =>
           computeLocalScore(
             { id: a.id, title: a.title, excerpt: a.excerpt, url: a.url, categoryName: a.category.name },
             filtersConfig,
@@ -343,8 +348,8 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
           )
         );
 
-        // Persist localScore + filteredReason, mark ignored
-        for (const r of filterResults) {
+        // Persist localScore + filteredReason, mark locally-ignored
+        for (const r of localResults) {
           await prisma.discoveredArticle.update({
             where: { id: r.id },
             data: {
@@ -355,14 +360,53 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
           });
         }
 
-        preFiltered = filterResults.filter((r) => r.shouldIgnore).length;
+        preFiltered = localResults.filter((r) => r.shouldIgnore).length;
 
-        // Send only top-N by localScore to OpenAI (batch limit)
-        const toScore = filterResults
+        // Articles that passed local filter → go through semantic filter
+        const localPassed = localResults
           .filter((r) => !r.shouldIgnore)
-          .sort((a, b) => b.localScore - a.localScore)
-          .slice(0, filtersConfig.maxBatchSize)
-          .map((r) => unscored.find((a) => a.id === r.id)!)
+          .sort((a, b) => b.localScore - a.localScore);
+
+        // ── Step 2: Semantic matrix filter ────────────────────────────────
+        const semanticResults = localPassed.map((lr) => {
+          const article = unscored.find((a) => a.id === lr.id)!;
+          return computeSemanticScore(
+            {
+              id: article.id,
+              title: article.title,
+              excerpt: article.excerpt,
+              sourceName: article.source.name,
+              categoryName: article.category.name,
+              reliabilityScore: article.source.reliabilityScore,
+            },
+            semanticConfig
+          );
+        });
+
+        // Persist semantic fields, mark semantically-ignored
+        for (const sr of semanticResults) {
+          await prisma.discoveredArticle.update({
+            where: { id: sr.id },
+            data: {
+              semanticScore: sr.semanticScore,
+              matchedKeywords: sr.matchedKeywords,
+              semanticCategory: sr.assignedCategory,
+              semanticSecondaryCategory: sr.secondaryCategory,
+              passedSemanticFilter: sr.passedSemanticFilter,
+              ...(!sr.passedSemanticFilter
+                ? { status: DiscoveredStatus.IGNORED, filteredReason: sr.filteredReason }
+                : {}),
+            },
+          });
+        }
+
+        semanticFiltered = semanticResults.filter((r) => !r.passedSemanticFilter).length;
+
+        // ── Step 3: Send semantic-passed articles to OpenAI ───────────────
+        const toScore = semanticResults
+          .filter((sr) => sr.passedSemanticFilter)
+          .slice(0, semanticConfig.thresholds.maxArticlesToScorePerRefresh)
+          .map((sr) => unscored.find((a) => a.id === sr.id)!)
           .filter(Boolean);
 
         if (toScore.length > 0) {
@@ -374,8 +418,8 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
           service: SERVICE.SCORING,
           type: 'pre_filter',
           status: 'OK',
-          message: `Pre-filter: ${preFiltered}/${unscored.length} skipped before AI (${scored} sent to OpenAI)`,
-          metadata: { total: unscored.length, preFiltered, sentToAI: scored },
+          message: `Filters: local −${preFiltered}, semantic −${semanticFiltered} → ${scored} sent to OpenAI (from ${unscored.length} total)`,
+          metadata: { total: unscored.length, preFiltered, semanticFiltered, sentToAI: scored },
         });
       }
     } catch (err) {
@@ -395,7 +439,7 @@ export async function fetchAllSources(): Promise<FetchAllResult> {
     revalidatePath('/admin/news-discovery');
     revalidatePath('/admin/sources');
 
-    return { ok: true, results, scored, preFiltered, clustered };
+    return { ok: true, results, scored, preFiltered, semanticFiltered, clustered };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
   }
@@ -505,6 +549,24 @@ export async function generateDraftFromDiscoveredArticle(
         model: 'gpt-4o',
         imagePrompt: generated.imagePrompt || null,
       },
+    });
+
+    void captureTrainingExample({
+      articleId: article.id,
+      discoveredArticleId: discoveredId,
+      sourceTitle: discovered.title,
+      sourceExcerpt: discovered.excerpt || undefined,
+      sourceUrl: discovered.url,
+      sourceName: discovered.source.name,
+      dataType: TrainingDataType.NEWS_RSS,
+      systemPrompt: generated._prompts.systemPrompt,
+      userPrompt: generated._prompts.userPrompt,
+      aiCompletion: JSON.stringify(generated),
+      model: generated._prompts.model,
+      generatedTitle: generated.title,
+      generatedExcerpt: generated.excerpt,
+      generatedTags: generated.tags,
+      category: generated.suggestedCategory,
     });
 
     if (generated.facebookPost) {

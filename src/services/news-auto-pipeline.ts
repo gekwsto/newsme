@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/db';
 import { fetchFeed } from '@/lib/rss/fetcher';
 import { computeLocalScore, getContentFiltersConfig } from '@/lib/content-filter';
+import { computeSemanticScore, getSemanticMatrixConfig } from '@/lib/semantic-filter';
 import { scoreArticles } from '@/lib/ai/content-scorer';
 import { generateArticleContent } from '@/lib/ai/content-generator';
 import { FacebookClient } from '@/lib/social/facebook';
 import { logEvent, logOpenAIUsage, getMonthlyAiCosts, SERVICE } from '@/lib/monitoring/events';
 import { SITE_URL } from '@/lib/seo';
-import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, SocialPostStatus, SourceType } from '@/generated/prisma/enums';
+import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, SocialPostStatus, SourceType, TrainingDataType } from '@/generated/prisma/enums';
+import { captureTrainingExample } from '@/lib/training-capture';
 
 const MODEL = 'gpt-5-mini';
 const FEED_TIMEOUT_MS = 12_000;
@@ -147,7 +149,7 @@ async function _runPipeline(): Promise<PipelineRunResult> {
 
   const sources = await prisma.rssSource.findMany({
     where: { enabled: true, allowAutoGeneration: true },
-    select: { id: true, name: true, url: true, language: true, country: true, categoryId: true },
+    select: { id: true, name: true, url: true, language: true, country: true, categoryId: true, reliabilityScore: true },
   });
   plog('feeds_loaded', { count: sources.length, sources: sources.map((s) => s.name) });
 
@@ -161,6 +163,7 @@ async function _runPipeline(): Promise<PipelineRunResult> {
     sourceId: string; sourceName: string; language: string;
     country: string; categoryId: string; title: string;
     url: string; excerpt: string | null; imageUrl: string | null;
+    reliabilityScore: number;
   };
 
   const allNewItems: NewItem[] = [];
@@ -195,6 +198,7 @@ async function _runPipeline(): Promise<PipelineRunResult> {
         country: source.country, categoryId: source.categoryId,
         title: item.title, url: item.url,
         excerpt: item.excerpt ?? null, imageUrl: item.imageUrl ?? null,
+        reliabilityScore: source.reliabilityScore,
       });
     }
   }
@@ -208,12 +212,13 @@ async function _runPipeline(): Promise<PipelineRunResult> {
   // ── 3. Rule-based filter ──────────────────────────────────────────────────
 
   const filtersConfig = getContentFiltersConfig();
+  const semanticConfig = getSemanticMatrixConfig();
   const recentTitles = (await prisma.discoveredArticle.findMany({
     where: { createdAt: { gte: new Date(Date.now() - 48 * 3600000) } },
     select: { title: true },
   })).map((a) => a.title);
 
-  const filtered = allNewItems
+  const localFiltered = allNewItems
     .map((item) => ({
       item,
       score: computeLocalScore(
@@ -223,17 +228,41 @@ async function _runPipeline(): Promise<PipelineRunResult> {
       ),
     }))
     .filter(({ score }) => !score.shouldIgnore)
-    .sort((a, b) => b.score.localScore - a.score.localScore)
-    .slice(0, Math.min(remaining * 3, 30));
+    .sort((a, b) => b.score.localScore - a.score.localScore);
 
   plog('rule_filter_done', {
     inputItems: allNewItems.length,
-    afterFilter: filtered.length,
-    filteredOut: allNewItems.length - filtered.length,
+    afterLocalFilter: localFiltered.length,
+    filteredOut: allNewItems.length - localFiltered.length,
+  });
+
+  // ── 3b. Semantic matrix filter ─────────────────────────────────────────────
+
+  const semanticFiltered = localFiltered.filter(({ item }) => {
+    const result = computeSemanticScore(
+      {
+        id: item.url,
+        title: item.title,
+        excerpt: item.excerpt,
+        sourceName: item.sourceName,
+        reliabilityScore: item.reliabilityScore,
+      },
+      semanticConfig
+    );
+    return result.passedSemanticFilter;
+  });
+
+  const filtered = semanticFiltered.slice(0, Math.min(remaining * 3, 30));
+
+  plog('semantic_filter_done', {
+    afterLocalFilter: localFiltered.length,
+    afterSemanticFilter: semanticFiltered.length,
+    semanticRejected: localFiltered.length - semanticFiltered.length,
+    candidates: filtered.length,
   });
 
   if (filtered.length === 0) {
-    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'All items filtered out by rules' };
+    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'All items filtered out by rules or semantic filter' };
   }
 
   // ── 4. AI scoring ─────────────────────────────────────────────────────────
@@ -406,6 +435,23 @@ async function _runPipeline(): Promise<PipelineRunResult> {
 
       await prisma.aiDraft.create({
         data: { articleId: article.id, prompt: topic, rawOutput: JSON.stringify(generated), model: MODEL },
+      });
+
+      void captureTrainingExample({
+        articleId: article.id,
+        sourceTitle: item.title,
+        sourceExcerpt: item.excerpt || undefined,
+        sourceUrl: item.url,
+        sourceName: item.sourceName,
+        dataType: TrainingDataType.NEWS_RSS,
+        systemPrompt: generated._prompts.systemPrompt,
+        userPrompt: generated._prompts.userPrompt,
+        aiCompletion: JSON.stringify(generated),
+        model: generated._prompts.model,
+        generatedTitle: generated.title,
+        generatedExcerpt: generated.excerpt,
+        generatedTags: generated.tags,
+        category: generated.suggestedCategory,
       });
 
       await prisma.discoveredArticle.upsert({

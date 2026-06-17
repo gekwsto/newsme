@@ -7,6 +7,7 @@ import { fetchAllHealthChecks, type ServiceHealth } from '@/lib/monitoring/healt
 import { formatRelativeDate } from '@/lib/utils';
 import { RefreshButton } from './RefreshButton';
 import { TOKENS_PER_ARTICLE_ESTIMATE, COST_PER_TOKEN_GPT4O } from '@/lib/content-filter';
+import { SEMANTIC_TOKENS_SAVED } from '@/lib/semantic-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +93,12 @@ async function fetchData() {
   const preFilteredToday = await prisma.discoveredArticle.count({
     where: { filteredReason: { not: null }, createdAt: { gte: todayStart } },
   });
+  const semanticPassedToday = await prisma.discoveredArticle.count({
+    where: { semanticScore: { not: null }, passedSemanticFilter: true, createdAt: { gte: todayStart } },
+  });
+  const semanticIgnoredToday = await prisma.discoveredArticle.count({
+    where: { semanticScore: { not: null }, passedSemanticFilter: false, createdAt: { gte: todayStart } },
+  });
   const aiScoringCallsToday = await prisma.systemEvent.count({
     where: { service: 'openai', type: 'usage', createdAt: { gte: todayStart },
       message: { contains: 'Scoring' } },
@@ -142,7 +149,9 @@ async function fetchData() {
     { totalCost: 0, totalTokens: 0, calls: 0 }
   );
 
-  const tokensSavedToday = preFilteredToday * TOKENS_PER_ARTICLE_ESTIMATE;
+  const tokensSavedToday =
+    preFilteredToday * TOKENS_PER_ARTICLE_ESTIMATE +
+    semanticIgnoredToday * SEMANTIC_TOKENS_SAVED;
   const costSavedToday = tokensSavedToday * COST_PER_TOKEN_GPT4O;
 
   return {
@@ -160,6 +169,8 @@ async function fetchData() {
     seoHealth: { seoHealthScore, seoMissingImage, seoMissingTitle, seoMissingDescription, seoMissingTags, seoTotal },
     costSavings: {
       preFilteredToday,
+      semanticPassedToday,
+      semanticIgnoredToday,
       tokensSavedToday,
       costSavedToday,
       aiScoringCallsToday,
@@ -374,11 +385,22 @@ export default async function OperationsPage() {
 
         {/* Cost Optimization */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Cost Optimization (σήμερα)</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Cost Optimization (σήμερα)</h2>
+            <a href="/admin/semantic-matrix" className="text-xs text-violet-600 hover:text-violet-700 font-semibold">🧠 Semantic Matrix →</a>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Skipped before AI</p>
+              <p className="text-xs text-muted-foreground">Local Filtered</p>
               <p className="mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400">{costSavings.preFilteredToday}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground">🧠 Semantic Passed</p>
+              <p className="mt-1 text-2xl font-bold text-violet-600 dark:text-violet-400">{costSavings.semanticPassedToday}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground">🧠 Semantic Filtered</p>
+              <p className="mt-1 text-2xl font-bold text-violet-500 dark:text-violet-400">{costSavings.semanticIgnoredToday}</p>
             </div>
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Tokens Saved (est.)</p>

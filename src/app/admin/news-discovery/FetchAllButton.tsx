@@ -18,10 +18,11 @@ export default function FetchAllButton() {
             if (r.ok) {
               const total = r.results.reduce((s, x) => s + x.newCount, 0);
               const errors = r.results.filter((x) => x.error).length;
-              const scoredStr = r.scored > 0 ? ` · ${r.scored} scored` : '';
+              const scoredStr = r.scored > 0 ? ` · ${r.scored} AI scored` : '';
+              const semanticStr = r.semanticFiltered > 0 ? ` · 🧠 −${r.semanticFiltered} semantic` : '';
               const clusteredStr = r.clustered > 0 ? ` · ${r.clustered} trends` : '';
               setSummary(
-                `+${total} νέα άρθρα${scoredStr}${clusteredStr}` + (errors > 0 ? ` (${errors} σφάλματα)` : '')
+                `+${total} νέα άρθρα${semanticStr}${scoredStr}${clusteredStr}` + (errors > 0 ? ` (${errors} σφάλματα)` : '')
               );
             } else {
               setSummary(`⚠ ${r.error}`);

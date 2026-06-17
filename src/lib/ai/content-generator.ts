@@ -51,7 +51,15 @@ export interface GenerateOptions {
   generateAiCommentary: boolean;
 }
 
-export async function generateArticleContent(options: GenerateOptions): Promise<GeneratedArticle> {
+export interface GeneratePromptsMeta {
+  systemPrompt: string;
+  userPrompt: string;
+  model: string;
+}
+
+export type GeneratedArticleFull = GeneratedArticle & { _prompts: GeneratePromptsMeta };
+
+export async function generateArticleContent(options: GenerateOptions): Promise<GeneratedArticleFull> {
   const client = getClient();
   const wordCount = wordCountMap[options.targetLength];
 
@@ -232,7 +240,8 @@ AI | Τεχνολογία | Οικονομία | Επιχειρηματικότ�
     throw new Error(`Μη έγκυρη δομή απάντησης AI: ${validated.error.message}`);
   }
 
-  const article = validated.data;
+  const article = validated.data as GeneratedArticleFull;
+  article._prompts = { systemPrompt, userPrompt, model: 'gpt-5-mini' };
 
   // Append source attribution when a source URL was provided
   if (options.sourceUrl) {

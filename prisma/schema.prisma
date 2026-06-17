@@ -79,6 +79,12 @@ enum QueueItemStatus {
   CANCELLED
 }
 
+enum TrainingDataType {
+  NEWS_RSS
+  NEWS_MANUAL
+  EVERGREEN
+}
+
 enum ImageStatus {
   NONE
   PENDING
@@ -178,6 +184,7 @@ model Article {
 
   tags                 ArticleTag[]
   aiDraft              AiDraft?
+  trainingExample      TrainingExample?
   socialPosts          SocialPost[]
   approvals            Approval[]
   scheduledPosts       ScheduledPost[]
@@ -303,6 +310,13 @@ model DiscoveredArticle {
   imageUrl       String?
   localScore     Int?
   filteredReason String?
+  // ── Semantic filter fields ─────────────────────────────────────────────────
+  semanticScore             Int?
+  matchedKeywords           Json?
+  semanticCategory          String?
+  semanticSecondaryCategory String?
+  passedSemanticFilter      Boolean  @default(false)
+  // ──────────────────────────────────────────────────────────────────────────
   clusterId      String?
   cluster        TrendCluster?    @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   clusterPrimary Boolean          @default(false)
@@ -486,4 +500,54 @@ model KeywordOpportunity {
   @@index([status])
   @@index([clusterSlug])
   @@map("keyword_opportunities")
+}
+
+// ─── Training Data ─────────────────────────────────────────────────────────────
+
+model TrainingExample {
+  id                  String           @id @default(cuid())
+  articleId           String           @unique
+  article             Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  // Optional link to the RSS article that triggered generation
+  discoveredArticleId String?
+
+  // Source material (the raw input that was fed to the model)
+  sourceTitle         String           @db.Text
+  sourceExcerpt       String?          @db.Text
+  sourceUrl           String?
+  sourceName          String?
+
+  // The prompt/completion pair (core training signal)
+  dataType            TrainingDataType
+  systemPrompt        String           @db.Text
+  userPrompt          String           @db.Text
+  aiCompletion        String           @db.Text  // full JSON string returned by GPT
+  model               String
+
+  // Structured extracted fields (for easy filtering/searching)
+  generatedTitle      String
+  generatedExcerpt    String           @db.Text
+  generatedTags       String[]
+  category            String?
+
+  // Quality signals (populated by human actions)
+  wasEdited           Boolean          @default(false)
+  wasPublished        Boolean          @default(false)
+  wasRejected         Boolean          @default(false)
+  humanRating         Int?             // 1-5, for future manual quality tagging
+
+  // Final state snapshot (taken at publish time)
+  finalTitle          String?
+  finalContent        String?          @db.Text
+
+  // Export control
+  includeInExport     Boolean          @default(true)
+
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([dataType, createdAt(sort: Desc)])
+  @@index([wasPublished, createdAt(sort: Desc)])
+  @@map("training_examples")
 }

@@ -4,7 +4,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateArticleContent } from '@/lib/ai/content-generator';
 import { GenerateInputSchema, type GenerateInput } from '@/lib/ai/schemas';
-import { ArticleStatus, SourceType, SocialPostStatus } from '@/generated/prisma/enums';
+import { ArticleStatus, SourceType, SocialPostStatus, TrainingDataType } from '@/generated/prisma/enums';
+import { captureTrainingExample } from '@/lib/training-capture';
 
 async function resolveSuggestedCategory(
   suggestedCategory: string | undefined,
@@ -102,6 +103,21 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
         model: 'gpt-4o',
         imagePrompt: generated.imagePrompt || null,
       },
+    });
+
+    void captureTrainingExample({
+      articleId: article.id,
+      sourceTitle: validated.topic,
+      sourceUrl: validated.sourceUrl || undefined,
+      dataType: TrainingDataType.NEWS_MANUAL,
+      systemPrompt: generated._prompts.systemPrompt,
+      userPrompt: generated._prompts.userPrompt,
+      aiCompletion: JSON.stringify(generated),
+      model: generated._prompts.model,
+      generatedTitle: generated.title,
+      generatedExcerpt: generated.excerpt,
+      generatedTags: generated.tags,
+      category: generated.suggestedCategory,
     });
 
     // Create Facebook SocialPost if requested

@@ -47,6 +47,7 @@ async function fetchArticles(filters: { categoryId?: string; status?: string }) 
       score: true,
       cluster: { select: { id: true, topic: true, articleCount: true, sourceCount: true, trendScore: true } },
     },
+    // New semantic fields are automatically included (scalar fields)
   });
 }
 
@@ -102,13 +103,14 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
 
   const window72h = new Date(Date.now() - 72 * 60 * 60 * 1000);
 
-  const [rawArticles, categories, counts, unscoredCount, preFilteredCount, editorialConfig, trends, viralArticles] =
+  const [rawArticles, categories, counts, unscoredCount, preFilteredCount, semanticFilteredCount, editorialConfig, trends, viralArticles] =
     await Promise.all([
       fetchArticles({ categoryId: categoryFilter, status: statusFilter }),
       prisma.category.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
       prisma.discoveredArticle.groupBy({ by: ['status'], _count: { id: true } }),
       prisma.discoveredArticle.count({ where: { score: null, status: DiscoveredStatus.NEW } }),
       prisma.discoveredArticle.count({ where: { filteredReason: { not: null }, createdAt: { gte: new Date(Date.now() - 24 * 3600000) } } }),
+      prisma.discoveredArticle.count({ where: { semanticScore: { not: null }, passedSemanticFilter: false, createdAt: { gte: new Date(Date.now() - 24 * 3600000) } } }),
       Promise.resolve(getEditorialConfig()),
       prisma.trendCluster.findMany({
         where: {
@@ -228,7 +230,12 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
               )}
               {preFilteredCount > 0 && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
-                  ✂ Pre-filtered σήμερα: {preFilteredCount}
+                  ✂ Local filtered σήμερα: {preFilteredCount}
+                </span>
+              )}
+              {semanticFilteredCount > 0 && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400">
+                  🧠 Semantic filtered σήμερα: {semanticFilteredCount}
                 </span>
               )}
             </div>
@@ -356,6 +363,38 @@ export default async function NewsDiscoveryPage({ searchParams }: PageProps) {
                         {article.filteredReason && (
                           <span className="text-[10px] text-red-500 dark:text-red-400 italic">
                             ✂ {article.filteredReason}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Semantic filter badge */}
+                    {article.semanticScore !== null && article.semanticScore !== undefined && (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <span
+                          title="Semantic matrix score (hot keywords)"
+                          className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                            article.passedSemanticFilter
+                              ? article.semanticScore >= 80
+                                ? 'border-violet-400 dark:border-violet-600 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/20'
+                                : 'border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-400'
+                              : 'border-slate-300 dark:border-slate-700 text-slate-400 line-through'
+                          }`}
+                        >
+                          🧠 {article.semanticScore}
+                        </span>
+                        {article.semanticCategory && (
+                          <span className="text-[10px] font-medium text-violet-600 dark:text-violet-400">
+                            {article.semanticCategory}
+                            {article.semanticSecondaryCategory && (
+                              <span className="text-violet-400 dark:text-violet-600"> · {article.semanticSecondaryCategory}</span>
+                            )}
+                          </span>
+                        )}
+                        {Array.isArray(article.matchedKeywords) && article.matchedKeywords.length > 0 && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                            {(article.matchedKeywords as string[]).slice(0, 4).join(', ')}
+                            {article.matchedKeywords.length > 4 && ` +${article.matchedKeywords.length - 4}`}
                           </span>
                         )}
                       </div>

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ArticleStatus } from '@/generated/prisma/enums';
+import { markTrainingPublished, markTrainingRejected, markTrainingEdited } from '@/lib/training-capture';
 
 async function requireAuth() {
   const session = await auth();
@@ -41,6 +42,8 @@ export async function rejectArticle(articleId: string, note?: string) {
     }),
   ]);
 
+  void markTrainingRejected(articleId);
+
   revalidatePath('/admin/approvals');
   revalidatePath('/admin');
 }
@@ -51,8 +54,10 @@ export async function publishArticle(articleId: string) {
   const article = await prisma.article.update({
     where: { id: articleId },
     data: { status: ArticleStatus.PUBLISHED, publishedAt: new Date() },
-    select: { slug: true, category: { select: { slug: true } } },
+    select: { slug: true, title: true, content: true, category: { select: { slug: true } } },
   });
+
+  void markTrainingPublished(articleId, article.title, article.content);
 
   revalidatePath('/');
   revalidatePath('/articles');
@@ -80,6 +85,10 @@ export async function updateArticle(
   await requireAuth();
 
   await prisma.article.update({ where: { id }, data });
+
+  if (data.title !== undefined || data.content !== undefined) {
+    void markTrainingEdited(id);
+  }
 
   revalidatePath(`/admin/articles/${id}/edit`);
   revalidatePath('/admin/approvals');

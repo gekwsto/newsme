@@ -1,0 +1,150 @@
+{
+  "thresholds": {
+    "minSemanticScore": 35,
+    "alwaysKeepIfSourceReliabilityAbove": 95,
+    "maxArticlesToScorePerRefresh": 50
+  },
+  "categories": {
+    "AI": {
+      "weight": 1.4,
+      "priorityEntities": [
+        "openai", "chatgpt", "gpt-4", "gpt-5", "claude", "anthropic", "gemini",
+        "deepmind", "nvidia", "sora", "dall-e", "midjourney", "llama", "mistral"
+      ],
+      "keywords": [
+        "openai", "chatgpt", "gpt-4", "gpt-5", "claude", "anthropic", "gemini",
+        "deepmind", "artificial intelligence", "machine learning", "large language model",
+        "llm", "neural network", "deep learning", "ai agents", "generative ai",
+        "sora", "dall-e", "midjourney", "stable diffusion", "image generation",
+        "nvidia", "cuda", "ai chip", "gpu", "tpu", "inference",
+        "robotics", "autonomous", "self-driving", "computer vision",
+        "natural language processing", "nlp", "transformer", "fine-tuning",
+        "ai regulation", "ai safety", "alignment", "agi", "superintelligence",
+        "mistral", "llama", "meta ai", "apple intelligence", "copilot",
+        "ai assistant", "chatbot", "voice assistant", "multimodal"
+      ]
+    },
+    "Τεχνολογία": {
+      "weight": 1.2,
+      "priorityEntities": [
+        "elon musk", "musk", "tesla", "spacex", "apple", "google", "microsoft",
+        "amazon", "meta", "samsung", "sony", "intel", "qualcomm", "amd"
+      ],
+      "keywords": [
+        "elon musk", "musk", "tesla", "spacex", "apple", "iphone", "ipad",
+        "google", "microsoft", "amazon", "meta", "facebook", "instagram",
+        "samsung", "sony", "intel", "qualcomm", "amd", "chip", "semiconductor",
+        "cybersecurity", "data breach", "hack", "ransomware", "malware",
+        "startup", "ipo", "unicorn", "venture capital", "series a", "funding",
+        "quantum computing", "blockchain", "cloud computing", "saas",
+        "app", "software", "hardware", "gadget", "wearable", "vr", "ar",
+        "5g", "6g", "satellite", "internet", "broadband", "fiber",
+        "data center", "server", "storage", "cybercrime", "phishing",
+        "open source", "linux", "developer", "github", "programming"
+      ]
+    },
+    "Οικονομία": {
+      "weight": 1.1,
+      "priorityEntities": [
+        "bitcoin", "fed", "ecb", "imf", "world bank", "federal reserve"
+      ],
+      "keywords": [
+        "bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain",
+        "stock market", "nasdaq", "s&p 500", "dow jones", "wall street",
+        "inflation", "interest rates", "fed", "ecb", "federal reserve",
+        "oil prices", "brent", "gold", "silver", "commodities",
+        "euro", "dollar", "yen", "pound", "currency", "forex",
+        "recession", "gdp", "growth", "unemployment", "jobs",
+        "debt", "deficit", "budget", "fiscal", "monetary policy",
+        "banks", "banking", "imf", "world bank", "bond", "yield",
+        "investment", "etf", "hedge fund", "pension", "tax",
+        "prices", "cost of living", "energy prices", "gas prices",
+        "supply chain", "trade war", "tariffs", "sanctions",
+        "markets", "rally", "crash", "correction", "bear market", "bull market"
+      ]
+    },
+    "Επιχειρηματικότητα": {
+      "weight": 1.1,
+      "priorityEntities": [
+        "series a", "series b", "ipo", "unicorn", "venture capital"
+      ],
+      "keywords": [
+        "startup", "funding", "series a", "series b", "series c",
+        "investment", "venture capital", "vcs", "angel investor",
+        "ceo", "founder", "co-founder", "entrepreneur",
+        "layoffs", "hiring", "workforce", "employees",
+        "acquisition", "merger", "takeover", "deal",
+        "ipo", "unicorn", "valuation", "billion",
+        "business model", "revenue", "profit", "growth",
+        "scale", "pivot", "product market fit",
+        "accelerator", "incubator", "y combinator",
+        "e-commerce", "marketplace", "platform",
+        "disruption", "innovation", "technology company"
+      ]
+    },
+    "Ελλάδα": {
+      "weight": 1.0,
+      "priorityEntities": [
+        "μητσοτάκης", "τσίπρας", "ανδρουλάκης", "κασσελάκης",
+        "ελλάδα", "αθήνα", "θεσσαλονίκη"
+      ],
+      "keywords": [
+        "ελλάδα", "ελλαδα", "greece", "greek", "κυβέρνηση", "κυβερνηση",
+        "βουλή", "βουλη", "βουλευτής", "βουλευτης",
+        "μητσοτάκης", "μητσοτακης", "τσίπρας", "τσιπρας",
+        "ανδρουλάκης", "ανδρουλακης", "κασσελάκης", "κασσελακης",
+        "αθήνα", "αθηνα", "θεσσαλονίκη", "θεσσαλονικη",
+        "δημόσιο", "δημοσιο", "φορολογία", "φορολογια",
+        "μισθοί", "μισθοι", "συντάξεις", "συνταξεις",
+        "ακρίβεια", "ακριβεια", "ενέργεια", "ενεργεια",
+        "τουρισμός", "τουρισμος", "tourism", "εργασία", "εργασια",
+        "πανελλήνιες", "πανελληνιες", "υγεία", "υγεια",
+        "παιδεία", "παιδεια", "σεισμός", "σεισμος",
+        "οικονομία", "οικονομια", "νέα δημοκρατία", "νεα δημοκρατια",
+        "συριζα", "πασοκ", "κκε", "νέο κόμμα", "εκλογές", "εκλογες",
+        "δήμος", "δημος", "περιφέρεια", "περιφερεια",
+        "επενδύσεις", "επενδυσεις", "ελληνική", "ελληνικη"
+      ]
+    },
+    "Κόσμος": {
+      "weight": 1.0,
+      "priorityEntities": [
+        "trump", "biden", "putin", "zelensky", "china", "russia", "ukraine"
+      ],
+      "keywords": [
+        "trump", "biden", "putin", "zelensky", "xi jinping",
+        "china", "russia", "ukraine", "israel", "iran", "gaza",
+        "war", "conflict", "ceasefire", "peace talks",
+        "nato", "eu", "europe", "united nations", "un",
+        "migration", "refugees", "asylum",
+        "elections", "vote", "president", "prime minister",
+        "sanctions", "diplomacy", "geopolitics",
+        "middle east", "asia", "africa", "latin america",
+        "terrorism", "attack", "security",
+        "climate", "energy crisis", "pandemic", "earthquake",
+        "g7", "g20", "summit", "bilateral",
+        "north korea", "south korea", "japan", "india",
+        "turkey", "erdogan", "saudi arabia", "opec",
+        "france", "germany", "uk", "britain"
+      ]
+    },
+    "Αθλητικά": {
+      "weight": 0.9,
+      "priorityEntities": [
+        "giannis", "antetokounmpo", "olympiacos", "panathinaikos"
+      ],
+      "keywords": [
+        "olympiacos", "panathinaikos", "aek", "paok", "super league",
+        "champions league", "europa league", "conference league",
+        "nba", "giannis", "antetokounmpo",
+        "football", "basketball", "tennis", "formula 1", "f1",
+        "transfer", "world cup", "euro 2024", "olympics",
+        "fifa", "uefa", "fiba",
+        "messi", "ronaldo", "mbappe", "neymar",
+        "real madrid", "barcelona", "manchester", "liverpool",
+        "greek basketball", "euroleague",
+        "σούπερ λίγκα", "ολυμπιακός", "παναθηναϊκός", "αεκ", "παοκ"
+      ]
+    }
+  }
+}

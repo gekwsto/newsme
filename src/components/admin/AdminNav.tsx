@@ -24,6 +24,7 @@ import {
   Settings,
   ImageIcon,
   Workflow,
+  GraduationCap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,7 @@ const navItems = [
   { href: '/admin/articles', label: 'Άρθρα', icon: FileText, exact: false },
   { href: '/admin/ai-generator', label: 'AI Generator', icon: Sparkles, exact: false },
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
+  { href: '/admin/semantic-matrix', label: 'Semantic Matrix', icon: Brain, exact: false },
   { href: '/admin/sources', label: 'RSS Sources', icon: Rss, exact: false },
   { href: '/admin/news-settings', label: 'Auto Pipeline', icon: Workflow, exact: false },
   { href: '/admin/pipeline-logs', label: 'Pipeline Logs', icon: Activity, exact: false },
@@ -50,6 +52,7 @@ const navItems = [
   { href: '/admin/seo', label: 'SEO', icon: SearchCheck, exact: false },
   { href: '/admin/evergreen', label: 'Evergreen', icon: TreePine, exact: false },
   { href: '/admin/evergreen-opportunities', label: 'AI Learning', icon: Brain, exact: false },
+  { href: '/admin/training-data', label: 'Training Data', icon: GraduationCap, exact: false },
 ];
 
 export default function AdminNav({ user }: AdminNavProps) {
