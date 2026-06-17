@@ -32,6 +32,12 @@ export async function publishToFacebook(
   const pageId = process.env.FACEBOOK_PAGE_ID;
   const accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
 
+  console.log('[facebook] facebook_token_loaded', {
+    facebook_token_loaded: Boolean(accessToken),
+    facebook_token_length: accessToken?.length ?? 0,
+    facebook_page_id: pageId ?? null,
+  });
+
   if (!pageId || !accessToken) {
     throw new Error(
       'Λείπουν Facebook credentials. Ορίστε FACEBOOK_PAGE_ID και FACEBOOK_PAGE_ACCESS_TOKEN στο .env.'

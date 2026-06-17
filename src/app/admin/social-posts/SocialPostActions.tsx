@@ -8,23 +8,26 @@ import {
   rejectSocialPost,
   markSocialPostPublished,
   publishSocialPostToFacebook,
+  retryPublishSocialPost,
 } from '@/actions/social-posts';
 
 interface Props {
   postId: string;
   status: string;
   platform: string;
+  errorMessage?: string;
 }
 
-export default function SocialPostActions({ postId, status, platform }: Props) {
+export default function SocialPostActions({ postId, status, platform, errorMessage }: Props) {
   const [isSubmitting, startSubmitT] = useTransition();
   const [isApproving, startApproveT] = useTransition();
   const [isRejecting, startRejectT] = useTransition();
   const [isPublishing, startPublishT] = useTransition();
   const [isFbPublishing, startFbPublishT] = useTransition();
+  const [isRetrying, startRetryT] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
 
-  const busy = isSubmitting || isApproving || isRejecting || isPublishing || isFbPublishing;
+  const busy = isSubmitting || isApproving || isRejecting || isPublishing || isFbPublishing || isRetrying;
 
   async function wrap(fn: () => Promise<{ ok: boolean; error?: string }>, label: string) {
     setFeedback(null);
@@ -106,7 +109,24 @@ export default function SocialPostActions({ postId, status, platform }: Props) {
             {isPublishing ? '…' : 'Μαρκάρισμα ως Δημοσιευμένο'}
           </button>
         )}
+
+        {/* FAILED + FACEBOOK → retry publish */}
+        {status === 'FAILED' && platform === 'FACEBOOK' && (
+          <button
+            disabled={busy}
+            onClick={() => startRetryT(() => wrap(() => retryPublishSocialPost(postId), '✓ Δημοσιεύτηκε στο Facebook'))}
+            className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isRetrying ? '…' : '↺ Retry Facebook'}
+          </button>
+        )}
       </div>
+
+      {status === 'FAILED' && errorMessage && !feedback && (
+        <p className="text-[10px] text-red-500 dark:text-red-400 max-w-[200px] truncate" title={errorMessage}>
+          {errorMessage}
+        </p>
+      )}
 
       {feedback && (
         <p className={`text-[10px] font-medium ${feedback.type === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>

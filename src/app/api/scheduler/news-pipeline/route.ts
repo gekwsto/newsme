@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 import { runNewsPipeline } from '@/services/news-auto-pipeline';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
-function isAuthorized(request: Request): boolean {
+async function isAuthorized(request: Request): Promise<boolean> {
   const envSecret = process.env.CRON_SECRET;
 
   const xCronHeader = request.headers.get('x-cron-secret');
@@ -12,24 +13,28 @@ function isAuthorized(request: Request): boolean {
   const { searchParams } = new URL(request.url);
   const querySecret = searchParams.get('secret');
 
-  const hasXCron = xCronHeader === envSecret;
-  const hasBearer = authHeader === `Bearer ${envSecret}`;
-  const hasQuery = querySecret === envSecret;
+  const hasXCron = Boolean(envSecret) && xCronHeader === envSecret;
+  const hasBearer = Boolean(envSecret) && authHeader === `Bearer ${envSecret}`;
+  const hasQuery = Boolean(envSecret) && querySecret === envSecret;
 
-  console.log('[news-pipeline] auth check', {
+  if (hasXCron || hasBearer || hasQuery) return true;
+
+  const session = await auth();
+  if (session?.user?.role === 'ADMIN') return true;
+
+  console.log('[news-pipeline] auth_failed', {
     hasCronSecretEnv: Boolean(envSecret),
     hasXCronSecretHeader: Boolean(xCronHeader),
     hasAuthorizationHeader: Boolean(authHeader),
     hasQuerySecret: Boolean(querySecret),
-    authMethodMatched: hasXCron || hasBearer || hasQuery,
+    hasAdminSession: Boolean(session?.user),
   });
 
-  if (!envSecret) return true;
-  return hasXCron || hasBearer || hasQuery;
+  return false;
 }
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!await isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const result = await runNewsPipeline();
@@ -37,7 +42,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!await isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const result = await runNewsPipeline();

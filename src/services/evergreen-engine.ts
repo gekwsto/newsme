@@ -8,7 +8,7 @@ import { scoreArticle, passesQualityGate } from '@/lib/ai/quality-scorer';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
 import { CLUSTERS, getAllTopics, type EvergreenTopic } from './evergreen-clusters';
 
-const TARGET_DRAFT_COUNT = 3;
+const DEFAULT_TARGET_DRAFT_COUNT = 3;
 
 // ─── Jaccard similarity on words longer than 3 chars ─────────────────────────
 
@@ -339,7 +339,7 @@ async function generateOneTopic(
 
 // ─── Main Engine ──────────────────────────────────────────────────────────────
 
-export async function runEvergreenEngine(limit = 5): Promise<EngineResult> {
+export async function runEvergreenEngine(limit = 5, targetDraftCount = DEFAULT_TARGET_DRAFT_COUNT): Promise<EngineResult> {
   const details: EngineResult['details'] = [];
 
   const draftCount = await prisma.article.count({
@@ -350,15 +350,15 @@ export async function runEvergreenEngine(limit = 5): Promise<EngineResult> {
     },
   });
 
-  const needed = Math.max(0, Math.min(limit, TARGET_DRAFT_COUNT - draftCount));
+  const needed = Math.max(0, Math.min(limit, targetDraftCount - draftCount));
 
   if (needed === 0) {
     void logEvent({
       service: SERVICE.SCHEDULER,
       type: 'evergreen_skip',
       status: 'OK',
-      message: `Evergreen engine: already ${draftCount} drafts (target ${TARGET_DRAFT_COUNT}) — skipping`,
-      metadata: { draftCount, target: TARGET_DRAFT_COUNT },
+      message: `Evergreen engine: already ${draftCount} drafts (target ${targetDraftCount}) — skipping`,
+      metadata: { draftCount, target: targetDraftCount },
     });
     return {
       ok: true,
@@ -472,12 +472,12 @@ export async function runEvergreenEngine(limit = 5): Promise<EngineResult> {
     service: SERVICE.SCHEDULER,
     type: 'evergreen_run',
     status: failed > 0 ? 'WARNING' : 'OK',
-    message: `Evergreen engine: ${generated} generated, ${failed} failed | ${totalWords} words | $${totalCost.toFixed(4)} | drafts: ${finalDraftCount}/${TARGET_DRAFT_COUNT}`,
+    message: `Evergreen engine: ${generated} generated, ${failed} failed | ${totalWords} words | $${totalCost.toFixed(4)} | drafts: ${finalDraftCount}/${targetDraftCount}`,
     metadata: {
       generated,
       failed,
       draftCount: finalDraftCount,
-      target: TARGET_DRAFT_COUNT,
+      target: targetDraftCount,
       needed,
       totalWords,
       estimatedCostUsd: parseFloat(totalCost.toFixed(4)),

@@ -170,7 +170,12 @@ export default async function SocialPostsPage({ searchParams }: PageProps) {
 
                     {/* Actions */}
                     <div className="flex-shrink-0">
-                      <SocialPostActions postId={post.id} status={post.status} platform={post.platform} />
+                      <SocialPostActions
+                        postId={post.id}
+                        status={post.status}
+                        platform={post.platform}
+                        errorMessage={post.errorMessage ?? undefined}
+                      />
                     </div>
                   </div>
                 );

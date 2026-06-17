@@ -269,6 +269,19 @@ model RssSource {
   @@map("rss_sources")
 }
 
+model EvergreenAutomationSettings {
+  id                 String   @id @default(cuid())
+  isEnabled          Boolean  @default(false)
+  allowedHours       Int[]    @default([9, 20])
+  targetDraftCount   Int      @default(3)
+  articlesPerRun     Int      @default(2)
+  dailyAiBudgetLimit Float    @default(2.0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("evergreen_automation_settings")
+}
+
 model NewsAutomationSettings {
   id                     String   @id @default(cuid())
   rssScanIntervalMinutes Int      @default(60)

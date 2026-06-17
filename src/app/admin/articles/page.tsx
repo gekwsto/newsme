@@ -5,7 +5,7 @@ import { FileText, Edit, Eye, Users } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { formatRelativeDate } from '@/lib/utils';
-import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
+import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import AdminShell from '@/components/admin/AdminShell';
 import ApprovalActions from '../approvals/ApprovalActions';
 import EvergreenEngineButton from './EvergreenEngineButton';
@@ -51,6 +51,7 @@ export default async function ArticlesPage({
         title: true,
         slug: true,
         status: true,
+        sourceType: true,
         updatedAt: true,
         views: true,
         qualityScore: true,
@@ -141,9 +142,16 @@ export default async function ArticlesPage({
                     return (
                       <tr key={article.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                         <td className="px-5 py-3">
-                          <p className="font-medium text-slate-900 dark:text-slate-100 line-clamp-1 max-w-xs">
-                            {article.title}
-                          </p>
+                          <div className="flex items-center gap-1.5 max-w-xs">
+                            {article.sourceType === SourceType.RSS_SUMMARY && (
+                              <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 leading-none">
+                                ⚡ Auto
+                              </span>
+                            )}
+                            <p className="font-medium text-slate-900 dark:text-slate-100 line-clamp-1">
+                              {article.title}
+                            </p>
+                          </div>
                           <p className="text-xs text-slate-400 mt-0.5">{article.author.name}</p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">

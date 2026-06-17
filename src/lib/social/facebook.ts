@@ -10,6 +10,11 @@ function maskToken(token: string): string {
 function getCredentials() {
   const pageId = process.env.FACEBOOK_PAGE_ID;
   const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+  console.log('[facebook] facebook_token_loaded', {
+    facebook_token_loaded: Boolean(token),
+    facebook_token_length: token?.length ?? 0,
+    facebook_page_id: pageId ?? null,
+  });
   if (!pageId || !token) throw new Error('Facebook credentials not configured');
   return { pageId, token };
 }

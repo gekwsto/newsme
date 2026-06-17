@@ -123,56 +123,70 @@ export async function markSocialPostPublished(id: string): Promise<ActionResult>
   }
 }
 
+// ─── Shared Facebook publish logic ───────────────────────────────────────────
+
+async function doPublishToFacebook(id: string, allowedStatuses: SocialPostStatus[]): Promise<ActionResult> {
+  const post = await prisma.socialPost.findUnique({
+    where: { id },
+    include: { article: { select: { slug: true } } },
+  });
+
+  if (!post) return { ok: false, error: 'Post δεν βρέθηκε' };
+
+  if (!allowedStatuses.includes(post.status)) {
+    return { ok: false, error: `Μη επιτρεπτή κατάσταση: ${post.status}` };
+  }
+
+  const link = `${SITE_URL}/article/${post.article.slug}`;
+
+  let externalPostId: string | undefined;
+
+  try {
+    const result = await publishToFacebook({ message: post.content, link });
+    externalPostId = result.id;
+  } catch (apiErr) {
+    const errorMessage = apiErr instanceof Error ? apiErr.message : 'Άγνωστο σφάλμα Facebook API';
+    await prisma.socialPost.update({
+      where: { id },
+      data: { status: SocialPostStatus.FAILED, errorMessage },
+    });
+    invalidate();
+    revalidatePath(`/admin/social-posts/${id}/preview`);
+    return { ok: false, error: errorMessage };
+  }
+
+  await prisma.socialPost.update({
+    where: { id },
+    data: {
+      status: SocialPostStatus.PUBLISHED,
+      publishedAt: new Date(),
+      externalPostId,
+      errorMessage: null,
+    },
+  });
+
+  invalidate();
+  revalidatePath(`/admin/social-posts/${id}/preview`);
+  return { ok: true };
+}
+
 // ─── Publish to Facebook via Graph API (APPROVED → PUBLISHED) ─────────────────
 
 export async function publishSocialPostToFacebook(id: string): Promise<ActionResult> {
   try {
     await requireAdmin();
+    return doPublishToFacebook(id, [SocialPostStatus.APPROVED]);
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
+  }
+}
 
-    const post = await prisma.socialPost.findUnique({
-      where: { id },
-      include: {
-        article: { select: { slug: true } },
-      },
-    });
+// ─── Retry failed Facebook publish (FAILED → PUBLISHED) ──────────────────────
 
-    if (!post) return { ok: false, error: 'Post δεν βρέθηκε' };
-
-    if (post.status !== SocialPostStatus.APPROVED) {
-      return { ok: false, error: 'Μόνο εγκεκριμένα posts μπορούν να δημοσιευτούν' };
-    }
-
-    const link = `${SITE_URL}/article/${post.article.slug}`;
-
-    let externalPostId: string | undefined;
-
-    try {
-      const result = await publishToFacebook({ message: post.content, link });
-      externalPostId = result.id;
-    } catch (apiErr) {
-      const errorMessage = apiErr instanceof Error ? apiErr.message : 'Άγνωστο σφάλμα Facebook API';
-      await prisma.socialPost.update({
-        where: { id },
-        data: { status: SocialPostStatus.FAILED, errorMessage },
-      });
-      invalidate();
-      revalidatePath(`/admin/social-posts/${id}/preview`);
-      return { ok: false, error: errorMessage };
-    }
-
-    await prisma.socialPost.update({
-      where: { id },
-      data: {
-        status: SocialPostStatus.PUBLISHED,
-        publishedAt: new Date(),
-        externalPostId,
-        errorMessage: null,
-      },
-    });
-
-    invalidate();
-    revalidatePath(`/admin/social-posts/${id}/preview`);
-    return { ok: true };
+export async function retryPublishSocialPost(id: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    return doPublishToFacebook(id, [SocialPostStatus.FAILED]);
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Άγνωστο σφάλμα' };
   }
