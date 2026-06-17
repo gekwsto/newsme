@@ -45,6 +45,8 @@ export async function POST(request: Request) {
   if (!await isAuthorized(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const result = await runNewsPipeline();
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === '1';
+  const result = await runNewsPipeline(force);
   return NextResponse.json(result, { status: result.ok ? 200 : 500 });
 }

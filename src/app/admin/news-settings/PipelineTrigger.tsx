@@ -5,10 +5,23 @@ import { Play, Loader2 } from 'lucide-react';
 
 interface PipelineResult {
   ok: boolean;
-  articlesGenerated: number;
+  scannedFeeds: number;
+  failedFeeds: number;
+  rssItems: number;
+  candidates: number;
+  generated: number;
+  rejected: number;
   facebookPosted: number;
+  reason?: string;
   error?: string;
-  skippedReason?: string;
+  scoreStats?: {
+    min: number;
+    max: number;
+    average: number;
+    threshold: number;
+    passedCount: number;
+    rejectedCount: number;
+  };
 }
 
 export default function PipelineTrigger() {
@@ -18,7 +31,7 @@ export default function PipelineTrigger() {
   const run = () =>
     startRun(async () => {
       setResult(null);
-      const res = await fetch('/api/scheduler/news-pipeline', { method: 'POST' });
+      const res = await fetch('/api/scheduler/news-pipeline?force=1', { method: 'POST' });
       const data = (await res.json()) as PipelineResult;
       setResult(data);
     });
@@ -35,17 +48,32 @@ export default function PipelineTrigger() {
       </button>
 
       {result && (
-        <div className={`rounded-lg px-4 py-3 text-sm border ${
+        <div className={`rounded-lg px-4 py-3 text-sm border space-y-1 ${
           result.ok
             ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
             : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
         }`}>
-          {result.skippedReason ? (
-            <p>Παρακάμφθηκε: {result.skippedReason}</p>
-          ) : result.ok ? (
-            <p>{result.articlesGenerated} άρθρα δημιουργήθηκαν · {result.facebookPosted} Facebook posts</p>
-          ) : (
+          {result.error ? (
             <p>Σφάλμα: {result.error}</p>
+          ) : result.reason ? (
+            <p>Παρακάμφθηκε: {result.reason}</p>
+          ) : (
+            <>
+              <p className="font-semibold">
+                ✓ {result.generated} άρθρα δημιουργήθηκαν · {result.facebookPosted} Facebook posts
+              </p>
+              <p className="text-xs opacity-75">
+                Feeds: {result.scannedFeeds} ({result.failedFeeds} failed) ·
+                RSS items: {result.rssItems} ·
+                Candidates: {result.candidates} ·
+                Rejected: {result.rejected}
+              </p>
+              {result.scoreStats && (
+                <p className="text-xs opacity-75">
+                  AI scores — min: {result.scoreStats.min} · max: {result.scoreStats.max} · avg: {result.scoreStats.average} · threshold: {result.scoreStats.threshold}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

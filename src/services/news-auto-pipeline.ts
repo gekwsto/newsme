@@ -91,7 +91,7 @@ export interface PipelineRunResult {
   topCandidates?: CandidateSummary[];
 }
 
-async function _runPipeline(): Promise<PipelineRunResult> {
+async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
   const zero = { scannedFeeds: 0, failedFeeds: 0, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0 };
 
   const [totalActiveFeeds, autoGenerationFeeds] = await Promise.all([
@@ -117,7 +117,7 @@ async function _runPipeline(): Promise<PipelineRunResult> {
     return { ok: true, ...zero, reason: 'Pipeline disabled' };
   }
 
-  if (!isAllowedHour(settings.allowedPublishHours)) {
+  if (!forceRun && !isAllowedHour(settings.allowedPublishHours)) {
     const athensHour = parseInt(
       new Intl.DateTimeFormat('el-GR', { hour: 'numeric', hour12: false, timeZone: 'Europe/Athens' }).format(new Date()),
       10
@@ -525,7 +525,7 @@ async function _runPipeline(): Promise<PipelineRunResult> {
   return result;
 }
 
-export async function runNewsPipeline(): Promise<PipelineRunResult> {
+export async function runNewsPipeline(forceRun = false): Promise<PipelineRunResult> {
   const zero = { scannedFeeds: 0, failedFeeds: 0, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0 };
 
   const timeout = new Promise<PipelineRunResult>((resolve) =>
@@ -535,7 +535,7 @@ export async function runNewsPipeline(): Promise<PipelineRunResult> {
     }, PIPELINE_TIMEOUT_MS)
   );
 
-  return Promise.race([_runPipeline(), timeout]).catch((err) => {
+  return Promise.race([_runPipeline(forceRun), timeout]).catch((err) => {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     plog('pipeline_fatal', { error: msg });
     void logEvent({ service: SERVICE.SCHEDULER, type: 'news_pipeline_run', status: 'ERROR', message: `Pipeline fatal: ${msg}` });

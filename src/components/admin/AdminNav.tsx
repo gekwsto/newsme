@@ -53,6 +53,7 @@ const navItems = [
   { href: '/admin/evergreen', label: 'Evergreen', icon: TreePine, exact: false },
   { href: '/admin/evergreen-opportunities', label: 'AI Learning', icon: Brain, exact: false },
   { href: '/admin/training-data', label: 'Training Data', icon: GraduationCap, exact: false },
+  { href: '/admin/article-review', label: 'Article Review', icon: CheckSquare, exact: false },
 ];
 
 export default function AdminNav({ user }: AdminNavProps) {
