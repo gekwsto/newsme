@@ -9,6 +9,7 @@ import { logEvent, logOpenAIUsage, getMonthlyAiCosts, SERVICE } from '@/lib/moni
 import { SITE_URL } from '@/lib/seo';
 import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, SocialPostStatus, SourceType, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
+import { selectFeaturedImage } from '@/lib/images/select-featured-image';
 
 const MODEL = 'gpt-5-mini';
 const FEED_TIMEOUT_MS = 12_000;
@@ -453,6 +454,42 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
         generatedTags: generated.tags,
         category: generated.suggestedCategory,
       });
+
+      // Auto-assign featured image from library if article has no image yet
+      if (!item.imageUrl) {
+        try {
+          const cat = await prisma.category.findUnique({
+            where: { id: item.categoryId },
+            select: { slug: true },
+          });
+          if (cat) {
+            const img = await selectFeaturedImage({
+              categorySlug: cat.slug,
+              tags: generated.tags,
+              articleTitle: generated.title,
+              articleId: article.id,
+            });
+            if (img) {
+              await prisma.article.update({
+                where: { id: article.id },
+                data: {
+                  coverImage: img.publicUrl,
+                  generatedImageUrl: img.publicUrl,
+                  imageStatus: ImageStatus.GENERATED,
+                  imageSource: 'LIBRARY',
+                  imageProvider: 'Pexels',
+                  imageAttribution: `${img.photographer} via Pexels`,
+                },
+              });
+              plog('auto_image_assigned', { articleId: article.id, publicUrl: img.publicUrl });
+            } else {
+              plog('auto_image_skip', { reason: 'no_library_images', articleId: article.id });
+            }
+          }
+        } catch (imgErr) {
+          plog('auto_image_error', { articleId: article.id, error: imgErr instanceof Error ? imgErr.message : String(imgErr) });
+        }
+      }
 
       await prisma.discoveredArticle.upsert({
         where: { url: item.url },

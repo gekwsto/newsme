@@ -520,6 +520,72 @@ model KeywordOpportunity {
   @@map("keyword_opportunities")
 }
 
+// ─── Image Library ─────────────────────────────────────────────────────────────
+
+model ImageCategory {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tags        ImageTag[]
+  assets      ImageAsset[]
+
+  @@map("image_categories")
+}
+
+model ImageTag {
+  id         String        @id @default(cuid())
+  name       String
+  slug       String
+  categoryId String
+  category   ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  assets     ImageAsset[]
+
+  @@unique([slug, categoryId])
+  @@map("image_tags")
+}
+
+model ImageAsset {
+  id              String             @id @default(cuid())
+  categoryId      String
+  category        ImageCategory      @relation(fields: [categoryId], references: [id])
+  tagId           String?
+  tag             ImageTag?          @relation(fields: [tagId], references: [id])
+  pexelsId        Int                @unique
+  localPath       String
+  publicUrl       String
+  originalUrl     String
+  photographer    String
+  photographerUrl String
+  pexelsUrl       String
+  width           Int
+  height          Int
+  altText         String
+  usedCount       Int                @default(0)
+  lastUsedAt      DateTime?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  usages          ArticleImageUsage[]
+
+  @@map("image_assets")
+}
+
+model ArticleImageUsage {
+  id           String     @id @default(cuid())
+  articleId    String
+  imageAssetId String
+  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@index([articleId])
+  @@map("article_image_usages")
+}
+
 // ─── Training Data ─────────────────────────────────────────────────────────────
 
 model TrainingExample {

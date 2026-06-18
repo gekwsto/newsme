@@ -23,6 +23,7 @@ import {
   ListOrdered,
   Settings,
   ImageIcon,
+  Images,
   Workflow,
   GraduationCap,
 } from 'lucide-react';
@@ -43,6 +44,7 @@ const navItems = [
   { href: '/admin/sources', label: 'RSS Sources', icon: Rss, exact: false },
   { href: '/admin/news-settings', label: 'Auto Pipeline', icon: Workflow, exact: false },
   { href: '/admin/pipeline-logs', label: 'Pipeline Logs', icon: Activity, exact: false },
+  { href: '/admin/image-library', label: 'Image Library', icon: Images, exact: false },
   { href: '/admin/image-settings', label: 'Image Settings', icon: ImageIcon, exact: false },
   { href: '/admin/social-posts', label: 'Social Posts', icon: MessageSquare, exact: false },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart2, exact: false },

@@ -60,7 +60,12 @@ const STATUS_COLOR: Record<string, string> = {
 
 function fmt(d: Date | null) {
   if (!d) return '—';
-  return new Intl.DateTimeFormat('el-GR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(d));
+  return new Intl.DateTimeFormat('el-GR', { dateStyle: 'short', timeStyle: 'short' })
+    .format(new Date(d))
+    .replace(/\bAM\b/gi, 'ΠΜ')
+    .replace(/\bPM\b/gi, 'ΜΜ')
+    .replace(/π\.μ\./gi, 'ΠΜ')
+    .replace(/μ\.μ\./gi, 'ΜΜ');
 }
 
 function localDatetimeDefault() {
@@ -68,7 +73,10 @@ function localDatetimeDefault() {
   now.setMinutes(0, 0, 0);
   now.setHours(now.getHours() + 1);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+  return {
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    time: `${pad(now.getHours())}:00`,
+  };
 }
 
 export default function QueueClient({ queueItems: initial, readyArticles, recentHistory }: QueueClientProps) {
@@ -77,7 +85,10 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
   const [isPending, startTransition] = useTransition();
   const [actionId, setActionId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [startTime, setStartTime] = useState(localDatetimeDefault());
+  const _def = localDatetimeDefault();
+  const [startDate, setStartDate] = useState(_def.date);
+  const [startHour, setStartHour] = useState(_def.time);
+  const startTime = `${startDate}T${startHour}`;
   const [intervalMin, setIntervalMin] = useState(20);
   const [expandedContent, setExpandedContent] = useState<string | null>(null);
   const [isRunning, startRun] = useTransition();
@@ -428,12 +439,20 @@ export default function QueueClient({ queueItems: initial, readyArticles, recent
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Ώρα Έναρξης
               </label>
-              <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className={`${inputClass} w-full`}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className={`${inputClass} flex-1`}
+                />
+                <input
+                  type="time"
+                  value={startHour}
+                  onChange={(e) => setStartHour(e.target.value)}
+                  className={`${inputClass} w-28`}
+                />
+              </div>
             </div>
 
             <div>

@@ -11,8 +11,9 @@ import { getEditorialConfig } from '@/lib/editorial-config';
 import { getContentFiltersConfig, computeLocalScore } from '@/lib/content-filter';
 import { getSemanticMatrixConfig, computeSemanticScore } from '@/lib/semantic-filter';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
-import { ArticleStatus, SourceType, SocialPostStatus, DiscoveredStatus, TrainingDataType } from '@/generated/prisma/enums';
+import { ArticleStatus, ImageStatus, SourceType, SocialPostStatus, DiscoveredStatus, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
+import { selectFeaturedImage } from '@/lib/images/select-featured-image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -610,6 +611,41 @@ export async function generateDraftFromDiscoveredArticle(
         update: {},
         create: { articleId: article.id, tagId: tag.id },
       });
+    }
+
+    // Auto-assign featured image from library if no RSS image
+    if (!discovered.imageUrl) {
+      try {
+        const cat = await prisma.category.findUnique({
+          where: { id: categoryId },
+          select: { slug: true },
+        });
+        if (cat) {
+          const img = await selectFeaturedImage({
+            categorySlug: cat.slug,
+            tags: generated.tags,
+            articleTitle: generated.title,
+            articleId: article.id,
+          });
+          if (img) {
+            await prisma.article.update({
+              where: { id: article.id },
+              data: {
+                coverImage: img.publicUrl,
+                generatedImageUrl: img.publicUrl,
+                imageStatus: ImageStatus.GENERATED,
+                imageSource: 'LIBRARY',
+                imageProvider: 'Pexels',
+                imageAttribution: `${img.photographer} via Pexels`,
+              },
+            });
+          } else {
+            console.warn(`[generateDraft] no library image available for article ${article.id}`);
+          }
+        }
+      } catch (imgErr) {
+        console.warn('[generateDraft] image selection error (non-fatal):', imgErr);
+      }
     }
 
     await prisma.discoveredArticle.update({
