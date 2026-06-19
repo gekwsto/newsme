@@ -6,7 +6,8 @@ import { prisma } from '@/lib/db';
 import { FacebookClient } from '@/lib/social/facebook';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
 import { SITE_URL } from '@/lib/seo';
-import { ArticleStatus, SocialPostStatus, QueueItemStatus } from '@/generated/prisma/enums';
+import { ArticleStatus, ArticleType, SocialPostStatus, QueueItemStatus } from '@/generated/prisma/enums';
+import { markTrainingPublished } from '@/lib/training-capture';
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -292,7 +293,7 @@ export async function _executeQueueItem(queueItemId: string): Promise<Result> {
   const item = await prisma.publishQueueItem.findUniqueOrThrow({
     where: { id: queueItemId },
     include: {
-      article: { select: { id: true, title: true, slug: true, status: true, category: { select: { slug: true } } } },
+      article: { select: { id: true, title: true, slug: true, content: true, status: true, articleType: true, category: { select: { slug: true } } } },
       socialPost: { select: { id: true, content: true, status: true } },
     },
   });
@@ -304,10 +305,18 @@ export async function _executeQueueItem(queueItemId: string): Promise<Result> {
         where: { id: item.articleId },
         data: { status: ArticleStatus.PUBLISHED, publishedAt: new Date() },
       });
+      void markTrainingPublished(item.articleId, item.article.title, item.article.content);
       revalidatePath('/');
       revalidatePath('/articles');
       revalidatePath(`/article/${item.article.slug}`);
       revalidatePath(`/category/${item.article.category.slug}`);
+      revalidatePath('/sitemap.xml');
+      if (item.article.articleType === ArticleType.EVERGREEN) {
+        revalidatePath('/sitemap-evergreen.xml');
+      } else {
+        revalidatePath('/sitemap-articles.xml');
+        revalidatePath('/news-sitemap.xml');
+      }
     }
 
     // Step 2: Publish Facebook post if attached

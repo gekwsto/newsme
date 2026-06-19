@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { markTrainingPublished } from '@/lib/training-capture';
 import { prisma } from '@/lib/db';
 import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
@@ -92,7 +93,7 @@ export async function runEvergreenPublisher(force = false): Promise<PublisherRes
       status: ArticleStatus.DRAFT,
     },
     orderBy: { createdAt: 'asc' },
-    select: { id: true, title: true, slug: true },
+    select: { id: true, title: true, slug: true, content: true },
   });
 
   if (!draft) {
@@ -119,9 +120,12 @@ export async function runEvergreenPublisher(force = false): Promise<PublisherRes
     },
   });
 
+  void markTrainingPublished(draft.id, draft.title, draft.content);
   revalidatePath('/');
   revalidatePath('/articles');
   revalidatePath(`/article/${draft.slug}`);
+  revalidatePath('/sitemap.xml');
+  revalidatePath('/sitemap-evergreen.xml');
 
   void logEvent({
     service: SERVICE.SCHEDULER,

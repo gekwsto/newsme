@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { fetchFeed } from '@/lib/rss/fetcher';
 import { computeLocalScore, getContentFiltersConfig } from '@/lib/content-filter';
@@ -433,6 +434,12 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           publishedAt: status === ArticleStatus.PUBLISHED ? new Date() : null,
         },
       });
+
+      if (status === ArticleStatus.PUBLISHED) {
+        revalidatePath('/sitemap.xml');
+        revalidatePath('/sitemap-articles.xml');
+        revalidatePath('/news-sitemap.xml');
+      }
 
       await prisma.aiDraft.create({
         data: { articleId: article.id, prompt: topic, rawOutput: JSON.stringify(generated), model: MODEL },

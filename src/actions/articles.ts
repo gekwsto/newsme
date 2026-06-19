@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { ArticleStatus } from '@/generated/prisma/enums';
+import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
 import { markTrainingPublished, markTrainingRejected, markTrainingEdited } from '@/lib/training-capture';
 
 async function requireAuth() {
@@ -54,7 +54,7 @@ export async function publishArticle(articleId: string) {
   const article = await prisma.article.update({
     where: { id: articleId },
     data: { status: ArticleStatus.PUBLISHED, publishedAt: new Date() },
-    select: { slug: true, title: true, content: true, category: { select: { slug: true } } },
+    select: { slug: true, title: true, content: true, articleType: true, category: { select: { slug: true } } },
   });
 
   void markTrainingPublished(articleId, article.title, article.content);
@@ -65,6 +65,14 @@ export async function publishArticle(articleId: string) {
   revalidatePath(`/category/${article.category.slug}`);
   revalidatePath('/admin/approvals');
   revalidatePath('/admin');
+
+  revalidatePath('/sitemap.xml');
+  if (article.articleType === ArticleType.EVERGREEN) {
+    revalidatePath('/sitemap-evergreen.xml');
+  } else {
+    revalidatePath('/sitemap-articles.xml');
+    revalidatePath('/news-sitemap.xml');
+  }
 }
 
 export async function updateArticle(
