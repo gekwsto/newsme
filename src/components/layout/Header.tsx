@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Menu, X, Search, Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import BreakingNewsTicker from './BreakingNewsTicker';
+import Logo from '@/components/ui/Logo';
+import { BRAND } from '@/config/brand';
 
 interface HeaderProps {
   categories: { name: string; slug: string }[];
@@ -31,12 +33,12 @@ export default function Header({ categories, newsItems }: HeaderProps) {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex flex-col leading-none group shrink-0">
-            <span className="font-black text-lg tracking-widest">
-              <span className="text-red-500 group-hover:text-red-400 transition-colors">ΑΙ</span>
-              <span className="text-white">ΣΧΟΛΙΑΣΜΟΣ</span>
-            </span>
+            <Logo
+              firstPartClassName="text-red-500 group-hover:text-red-400 transition-colors"
+              secondPartClassName="text-white"
+            />
             <span className="text-slate-500 text-[9px] tracking-wide hidden sm:block mt-0.5">
-              Η επικαιρότητα με έξυπνο σχολιασμό.
+              {BRAND.tagline}
             </span>
           </Link>
 

@@ -85,6 +85,13 @@ enum TrainingDataType {
   EVERGREEN
 }
 
+enum PipelineRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
 enum ImageStatus {
   NONE
   PENDING
@@ -205,14 +212,16 @@ model ArticleTag {
 }
 
 model AiDraft {
-  id          String   @id @default(cuid())
-  articleId   String   @unique
-  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  prompt      String   @db.Text
-  rawOutput   String   @db.Text
-  model       String   @default("gpt-4o")
-  imagePrompt String?  @db.Text
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  articleId        String   @unique
+  article          Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  prompt           String   @db.Text
+  rawOutput        String   @db.Text
+  model            String   @default("gpt-4o")
+  imagePrompt      String?  @db.Text
+  promptVersion    String?
+  generatorVersion String?
+  createdAt        DateTime @default(now())
 
   @@map("ai_drafts")
 }
@@ -290,6 +299,7 @@ model NewsAutomationSettings {
   facebookAutoPost       Boolean  @default(false)
   allowedPublishHours    Int[]    @default([10, 13, 15, 18, 21, 23])
   minimumImportanceScore Int      @default(7)
+  compoundScoreThreshold Int      @default(45)
   dailyAiBudgetLimit     Float    @default(0.80)
   isEnabled              Boolean  @default(true)
   createdAt              DateTime @default(now())
@@ -329,6 +339,15 @@ model DiscoveredArticle {
   semanticCategory          String?
   semanticSecondaryCategory String?
   passedSemanticFilter      Boolean  @default(false)
+  // ── Compound scoring fields ────────────────────────────────────────────────
+  compoundScore         Float?
+  compoundReason        String?
+  selectedForGeneration Boolean  @default(false)
+  // ── Article extraction ────────────────────────────────────────────────────
+  sourceArticleBody   String?  @db.Text
+  extractionSuccess   Boolean?
+  extractionMethod    String?
+  extractionWordCount Int?
   // ──────────────────────────────────────────────────────────────────────────
   clusterId      String?
   cluster        TrendCluster?    @relation(fields: [clusterId], references: [id], onDelete: SetNull)
@@ -523,14 +542,16 @@ model KeywordOpportunity {
 // ─── Image Library ─────────────────────────────────────────────────────────────
 
 model ImageCategory {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  tags        ImageTag[]
-  assets      ImageAsset[]
+  id           String                @id @default(cuid())
+  name         String
+  slug         String                @unique
+  description  String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  tags         ImageTag[]
+  collections  ImageCollection[]
+  assets       ImageAsset[]
+  defaultImage ImageCategoryDefault?
 
   @@map("image_categories")
 }
@@ -549,30 +570,121 @@ model ImageTag {
   @@map("image_tags")
 }
 
-model ImageAsset {
-  id              String             @id @default(cuid())
-  categoryId      String
-  category        ImageCategory      @relation(fields: [categoryId], references: [id])
-  tagId           String?
-  tag             ImageTag?          @relation(fields: [tagId], references: [id])
-  pexelsId        Int                @unique
-  localPath       String
-  publicUrl       String
-  originalUrl     String
-  photographer    String
-  photographerUrl String
-  pexelsUrl       String
-  width           Int
-  height          Int
-  altText         String
-  usedCount       Int                @default(0)
-  lastUsedAt      DateTime?
-  isActive        Boolean            @default(true)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  usages          ArticleImageUsage[]
+model ImageCollection {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String
+  categoryId  String
+  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assets      ImageAsset[]
 
+  @@unique([slug, categoryId])
+  @@map("image_collections")
+}
+
+model ImageAsset {
+  id               String             @id @default(cuid())
+  categoryId       String
+  category         ImageCategory      @relation(fields: [categoryId], references: [id])
+  tagId            String?
+  tag              ImageTag?          @relation(fields: [tagId], references: [id])
+  collectionId     String?
+  collection       ImageCollection?   @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  pexelsId         Int?               @unique
+  localPath        String
+  publicUrl        String
+  originalUrl      String?
+  photographer     String?
+  photographerUrl  String?
+  pexelsUrl        String?
+  uploadSource     String             @default("pexels")
+  width            Int
+  height           Int
+  altText          String
+  description      String?
+  qualityScore     Int                @default(5)
+  seasonStart      String?
+  seasonEnd        String?
+  theme            String             @default("global")
+  usedCount        Int                @default(0)
+  lastUsedAt       DateTime?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  usages           ArticleImageUsage[]
+  keywords         ImageKeyword[]
+  performance      ImagePerformance?
+  categoryDefaults ImageCategoryDefault[]
+
+  @@index([categoryId, isActive, theme])
+  @@index([tagId])
+  @@index([collectionId])
   @@map("image_assets")
+}
+
+model ImageKeyword {
+  id           String     @id @default(cuid())
+  imageAssetId String
+  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+  keyword      String
+  aliases      Json       @default("[]")
+  isPriority   Boolean    @default(false)
+  isOverride   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  @@unique([imageAssetId, keyword])
+  @@index([imageAssetId])
+  @@map("image_keywords")
+}
+
+model ImagePerformance {
+  id             String     @id @default(cuid())
+  imageAssetId   String     @unique
+  imageAsset     ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+  totalArticles  Int        @default(0)
+  totalViews     Int        @default(0)
+  totalClicks    Int        @default(0)
+  avgCtr         Float?
+  avgReadingTime Float?
+  avgScrollDepth Float?
+  lastSyncedAt   DateTime?
+  updatedAt      DateTime   @updatedAt
+
+  @@map("image_performance")
+}
+
+model ImageCategoryDefault {
+  id           String        @id @default(cuid())
+  categoryId   String        @unique
+  category     ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  imageAssetId String
+  imageAsset   ImageAsset    @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+
+  @@map("image_category_defaults")
+}
+
+model ImageSelectionSettings {
+  id                     String   @id @default(cuid())
+  categoryWeight         Float    @default(40)
+  subcategoryWeight      Float    @default(30)
+  priorityKeywordWeight  Float    @default(25)
+  keywordWeight          Float    @default(10)
+  exactPhraseWeight      Float    @default(15)
+  multiKeyword2Bonus     Float    @default(10)
+  multiKeyword3Bonus     Float    @default(20)
+  qualityScoreWeight     Float    @default(1)
+  overrideBonus          Float    @default(1000)
+  recentUsage1dPenalty   Float    @default(-15)
+  recentUsage3dPenalty   Float    @default(-10)
+  recentUsage7dPenalty   Float    @default(-5)
+  usageCountPenalty      Float    @default(-1)
+  usageCountCap          Float    @default(-20)
+  updatedAt              DateTime @updatedAt
+
+  @@map("image_selection_settings")
 }
 
 model ArticleImageUsage {
@@ -615,6 +727,15 @@ model TrainingExample {
   generatedTags       String[]
   category            String?
 
+  // Version tracking
+  promptVersion       String?
+  generatorVersion    String?
+
+  // Semantic context
+  matchedKeywords     String[]         @default([])
+  semanticCategory    String?
+  compoundScore       Float?
+
   // Quality signals (populated by human actions)
   wasEdited           Boolean          @default(false)
   wasPublished        Boolean          @default(false)
@@ -634,4 +755,73 @@ model TrainingExample {
   @@index([dataType, createdAt(sort: Desc)])
   @@index([wasPublished, createdAt(sort: Desc)])
   @@map("training_examples")
+}
+
+model PipelineRun {
+  id                    String            @id @default(cuid())
+  status                PipelineRunStatus @default(RUNNING)
+  startedAt             DateTime          @default(now())
+  finishedAt            DateTime?
+  forceRun              Boolean           @default(false)
+
+  // Feed stats
+  totalFeeds            Int               @default(0)
+  failedFeeds           Int               @default(0)
+  fetchedItems          Int               @default(0)
+
+  // Filter funnel
+  skippedDuplicates     Int               @default(0)
+  localRejected         Int               @default(0)
+  semanticRejected      Int               @default(0)
+  compoundRejected      Int               @default(0)
+  selectedForGeneration Int               @default(0)
+
+  // Generation results
+  generatedArticles     Int               @default(0)
+  failedGenerations     Int               @default(0)
+
+  // Context
+  modelUsed             String?
+  promptVersion         String?
+  generatorVersion      String?
+  compoundThreshold     Float?
+
+  // Outcome
+  reason                String?
+  errorMessage          String?           @db.Text
+
+  items                 PipelineRunItem[]
+
+  @@index([startedAt(sort: Desc)])
+  @@map("pipeline_runs")
+}
+
+model PipelineRunItem {
+  id                    String       @id @default(cuid())
+  runId                 String
+  run                   PipelineRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  sourceName            String
+  rssTitle              String       @db.Text
+  rssUrl                String
+
+  localScore            Float?
+  semanticScore         Float?
+  compoundScore         Float?
+  semanticCategory      String?
+  matchedKeywords       String[]     @default([])
+  resolvedCategory      String?
+  semanticBreakdown     Json?
+  extractionStatus      String?
+  extractionWordCount   Int?
+
+  selectedForGeneration Boolean      @default(false)
+  generatedArticleId    String?
+  generationStatus      String?
+  failureReason         String?      @db.Text
+
+  createdAt             DateTime     @default(now())
+
+  @@index([runId])
+  @@map("pipeline_run_items")
 }

@@ -3,8 +3,50 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
+import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import { markTrainingPublished, markTrainingRejected, markTrainingEdited } from '@/lib/training-capture';
+
+async function uniqueSlug(base: string): Promise<string> {
+  const safe = base.toLowerCase().replace(/[^a-z0-9Ͱ-Ͽἀ-῿]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'article';
+  let slug = safe;
+  let i = 0;
+  while (await prisma.article.findUnique({ where: { slug } })) {
+    slug = `${safe}-${++i}`;
+  }
+  return slug;
+}
+
+export type CreateArticleResult = { ok: true; id: string } | { ok: false; error: string };
+
+export async function createArticle(data: {
+  title: string;
+  categoryId: string;
+  articleType: ArticleType;
+  excerpt: string;
+}): Promise<CreateArticleResult> {
+  try {
+    const user = await requireAuth();
+    const slug = await uniqueSlug(data.title);
+    const article = await prisma.article.create({
+      data: {
+        title: data.title,
+        slug,
+        excerpt: data.excerpt,
+        content: '',
+        status: ArticleStatus.DRAFT,
+        articleType: data.articleType,
+        sourceType: SourceType.MANUAL,
+        categoryId: data.categoryId,
+        authorId: user.id,
+        readTime: 1,
+      },
+    });
+    revalidatePath('/admin/articles');
+    return { ok: true, id: article.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα δημιουργίας άρθρου' };
+  }
+}
 
 async function requireAuth() {
   const session = await auth();

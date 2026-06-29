@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,7 +14,7 @@ import { formatDate, formatNumber } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Preview Άρθρου | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Preview Άρθρου | Admin ${BRAND.name}`,
 };
 
 export default async function ArticlePreviewPage({

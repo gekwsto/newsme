@@ -71,7 +71,7 @@ export default function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="admin@aisxoliasmos.gr"
+            placeholder="admin@newsme.gr"
             className="w-full bg-slate-800 border border-slate-700 focus:border-red-500 text-white placeholder-slate-500 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none transition-colors"
           />
         </div>

@@ -1,5 +1,6 @@
 import { FacebookIcon } from '@/components/ui/SocialIcons';
 import { MessageCircle } from 'lucide-react';
+import { BRAND } from '@/config/brand';
 
 export default function ArticleCTA() {
   return (
@@ -32,15 +33,17 @@ export default function ArticleCTA() {
             Καθημερινή επικαιρότητα, σχολιασμός και συζητήσεις
           </p>
         </div>
-        <a
-          href="https://facebook.com/aisxoliasmos"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 bg-[#1877F2] hover:bg-[#166FE5] active:bg-[#1460C9] text-white text-sm font-bold px-5 py-2.5 rounded-full transition-colors shrink-0 shadow-sm"
-        >
-          <FacebookIcon size={16} />
-          Ακολούθησε τη σελίδα
-        </a>
+        {BRAND.facebook && (
+          <a
+            href={BRAND.facebook}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 bg-[#1877F2] hover:bg-[#166FE5] active:bg-[#1460C9] text-white text-sm font-bold px-5 py-2.5 rounded-full transition-colors shrink-0 shadow-sm"
+          >
+            <FacebookIcon size={16} />
+            Ακολούθησε τη σελίδα
+          </a>
+        )}
       </div>
     </div>
   );

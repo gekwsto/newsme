@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Zap, Brain, Target, Users, Mail } from 'lucide-react';
+import { BRAND } from '@/config/brand';
 
 export const metadata: Metadata = {
   title: 'Σχετικά με εμάς',
-  description:
-    'Μάθε για την ιστορία, την αποστολή και την ομάδα πίσω από το AI Σχολιασμός.',
+  description: `Μάθε για την ιστορία, την αποστολή και την ομάδα πίσω από το ${BRAND.name}.`,
 };
 
 const team = [
@@ -101,7 +101,7 @@ export default function AboutPage() {
           κάνει αδύνατο να ξέρεις τι είναι σημαντικό και τι είναι θόρυβος.
         </p>
         <p className="text-slate-300 leading-relaxed text-lg mb-4">
-          Το AI Σχολιασμός γεννήθηκε για να λύσει αυτό το πρόβλημα. Φέρνουμε τις πιο σημαντικές
+          Το NewsMe γεννήθηκε για να λύσει αυτό το πρόβλημα. Φέρνουμε τις πιο σημαντικές
           ειδήσεις για <strong className="text-white">AI, τεχνολογία, οικονομία</strong> και
           επικαιρότητα — και τις εξηγούμε με τρόπο που έχει νόημα.
         </p>
@@ -165,7 +165,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-200 rounded-2xl p-8 mb-16">
         <h2 className="text-xl font-black text-slate-900 mb-3">AI & Ανθρώπινη Επιμέλεια</h2>
         <p className="text-slate-600 leading-relaxed">
-          Το AI Σχολιασμός χρησιμοποιεί τεχνητή νοημοσύνη για να <strong>υποβοηθεί</strong> τη
+          Το NewsMe χρησιμοποιεί τεχνητή νοημοσύνη για να <strong>υποβοηθεί</strong> τη
           δημιουργία περιεχομένου — αλλά κάθε άρθρο ελέγχεται, επιμελείται και εγκρίνεται από
           ανθρώπους πριν δημοσιευτεί. Η ευθύνη για την ακρίβεια και την ποιότητα είναι πάντα
           ανθρώπινη.

@@ -1,18 +1,18 @@
 import { Article, Category, AdminArticle } from '@/types';
 
 export const categories: Category[] = [
-  { name: 'AI', slug: 'ai', color: '#7c3aed' },
-  { name: 'Τεχνολογία', slug: 'texnologia', color: '#1d4ed8' },
+  { name: 'Ελλάδα',    slug: 'ellada',    color: '#0891b2' },
+  { name: 'Κόσμος',    slug: 'kosmos',    color: '#4f46e5' },
   { name: 'Οικονομία', slug: 'oikonomia', color: '#059669' },
-  { name: 'Επιχειρηματικότητα', slug: 'epixeirimatikotita', color: '#c2410c' },
-  { name: 'Ελλάδα', slug: 'ellada', color: '#0891b2' },
-  { name: 'Κόσμος', slug: 'kosmos', color: '#4338ca' },
-  { name: 'Viral', slug: 'viral', color: '#db2777' },
-  { name: 'Απόψεις', slug: 'apopseis', color: '#475569' },
+  { name: 'Υγεία',     slug: 'ygeia',     color: '#16a34a' },
+  { name: 'Media',     slug: 'media',     color: '#db2777' },
+  { name: 'Plus',      slug: 'plus',      color: '#7c3aed' },
 ];
 
+const c = Object.fromEntries(categories.map((cat) => [cat.slug, cat]));
+
 export const getCategoryBySlug = (slug: string): Category | undefined =>
-  categories.find((c) => c.slug === slug);
+  categories.find((cat) => cat.slug === slug);
 
 const authors = {
   nikos: {
@@ -65,7 +65,7 @@ export const articles: Article[] = [
 <blockquote>"Δεν μιλάμε πια για το μέλλον. Μιλάμε για το σήμερα — και η Ελλάδα πρέπει να τρέξει για να μην μείνει πίσω." — Ανώτατο στέλεχος ελληνικής tech εταιρείας</blockquote>
 
 <p>Το ερώτημα δεν είναι πλέον <em>αν</em> η τεχνητή νοημοσύνη θα αλλάξει τη ζωή μας, αλλά πόσο γρήγορα είμαστε έτοιμοι να προσαρμοστούμε. Και αυτό, αγαπητοί αναγνώστες, είναι η πιο κρίσιμη ερώτηση της δεκαετίας.</p>`,
-    category: categories[0],
+    category: c.plus,
     author: authors.nikos,
     publishedAt: '2025-06-10T09:00:00Z',
     readTime: 6,
@@ -95,7 +95,7 @@ export const articles: Article[] = [
 </ul>
 
 <p>Η ελληνική γλώσσα υποστηρίζεται πλήρως από την πρώτη μέρα — κάτι που η Apple δεν έκανε σχεδόν ποτέ με τόση προσοχή.</p>`,
-    category: categories[1],
+    category: c.plus,
     author: authors.nikos,
     publishedAt: '2025-06-09T14:30:00Z',
     readTime: 4,
@@ -119,7 +119,7 @@ export const articles: Article[] = [
 
 <h2>Η άλλη πλευρά</h2>
 <p>Αρκεί να κοιτάξει κάποιος τα ποσοστά φτώχειας για να καταλάβει ότι η ανάπτυξη δεν φτάνει ισομερώς παντού. Το 18% των Ελλήνων ζει ακόμα κάτω από το όριο της φτώχειας.</p>`,
-    category: categories[2],
+    category: c.oikonomia,
     author: authors.maria,
     publishedAt: '2025-06-09T10:00:00Z',
     readTime: 5,
@@ -143,7 +143,7 @@ export const articles: Article[] = [
 
 <h2>Τι λένε οι ιδρυτές;</h2>
 <p>"Η Θεσσαλονίκη έχει ταλέντο παγκόσμιου επιπέδου. Απλά χρειάζεται και το ecosystem να ακολουθήσει" λέει ο CEO Θανάσης Δήμου.</p>`,
-    category: categories[3],
+    category: c.oikonomia,
     author: authors.giorgos,
     publishedAt: '2025-06-08T16:45:00Z',
     readTime: 4,
@@ -163,7 +163,7 @@ export const articles: Article[] = [
 
 <h2>Γιατί η Αθήνα;</h2>
 <p>Η έρευνα επισημαίνει τον συνδυασμό χαμηλού κόστους ζωής σε σχέση με τη Δυτική Ευρώπη, εξαιρετικής γαστρονομίας, φιλόξενης κουλτούρας και γρήγορου ίντερνετ ως τους βασικούς λόγους.</p>`,
-    category: categories[4],
+    category: c.ellada,
     author: authors.elena,
     publishedAt: '2025-06-08T11:00:00Z',
     readTime: 3,
@@ -183,7 +183,7 @@ export const articles: Article[] = [
 
 <h2>Η κατάσταση σήμερα</h2>
 <p>Οι ΗΠΑ έχουν επιβάλει αυστηρούς περιορισμούς στην εξαγωγή προηγμένων chips στην Κίνα. Η απάντηση της Κίνας; Επένδυση €180 δισ. για να κτίσει δική της ημιαγωγική βιομηχανία από μηδενική βάση.</p>`,
-    category: categories[5],
+    category: c.kosmos,
     author: authors.elena,
     publishedAt: '2025-06-07T13:00:00Z',
     readTime: 7,
@@ -205,7 +205,7 @@ export const articles: Article[] = [
 
 <h2>Πώς έγινε viral;</h2>
 <p>Το βίντεο ξεκίνησε από ένα ταπεινό 100 views. Στη συνέχεια, ένας Αμερικανός influencer το κοινοποίησε, και από εκεί αρχίζει η ιστορία να γίνεται παράξενη. Σε λιγότερο από 24 ώρες, το Max είχε γίνει trending σε 15 χώρες.</p>`,
-    category: categories[6],
+    category: c.plus,
     author: authors.kostas,
     publishedAt: '2025-06-07T09:30:00Z',
     readTime: 2,
@@ -228,7 +228,7 @@ export const articles: Article[] = [
 
 <h2>Τι χρειάζεται πραγματικά;</h2>
 <p>Δεν είναι μόνο χρήματα. Είναι ανατροπή ενός συστήματος που δίνει έμφαση στην απομνημόνευση αντί στην κριτική σκέψη. Που αντιμετωπίζει τον καθηγητή ως δημόσιο υπάλληλο αντί ως επαγγελματία.</p>`,
-    category: categories[7],
+    category: c.plus,
     author: authors.kostas,
     publishedAt: '2025-06-06T18:00:00Z',
     readTime: 6,
@@ -248,7 +248,7 @@ export const articles: Article[] = [
 
 <h2>Η μεθοδολογία μας</h2>
 <p>Δοκιμάσαμε και τα δύο models σε 20 κατηγορίες: coding, creative writing, factual Q&A, math, image analysis, summarization, και πολλά άλλα. Χρησιμοποιήσαμε blind testing για να αποφύγουμε προκαταλήψεις.</p>`,
-    category: categories[0],
+    category: c.plus,
     author: authors.nikos,
     publishedAt: '2025-06-06T12:00:00Z',
     readTime: 8,
@@ -268,7 +268,7 @@ export const articles: Article[] = [
 
 <h2>Τι οδήγησε σε αυτό;</h2>
 <p>Η έγκριση των Bitcoin ETFs από την SEC, η θεσμική υιοθέτηση από εταιρείες του S&P 500 και η νέα πολιτική της Fed συνέβαλαν σε αυτή την άνοδο που λίγοι ανέμεναν τόσο γρήγορα.</p>`,
-    category: categories[2],
+    category: c.oikonomia,
     author: authors.maria,
     publishedAt: '2025-06-05T20:00:00Z',
     readTime: 5,
@@ -288,7 +288,7 @@ export const articles: Article[] = [
 
 <h2>Ποιες περιοχές κερδίζουν;</h2>
 <p>Εκτός από τους κλασικούς προορισμούς (Σαντορίνη, Μύκονος, Κρήτη), φέτος παρατηρείται εκρηκτική αύξηση στη Βόρεια Ελλάδα, τη Χαλκιδική και τη Ρόδο.</p>`,
-    category: categories[4],
+    category: c.ellada,
     author: authors.maria,
     publishedAt: '2025-06-05T10:00:00Z',
     readTime: 4,
@@ -308,7 +308,7 @@ export const articles: Article[] = [
 
 <h2>Τι ορίζει ο νόμος;</h2>
 <p>Το AI Act κατηγοριοποιεί τα AI systems ανάλογα με τον κίνδυνο που παρουσιάζουν: minimal risk, limited risk, high risk και unacceptable risk. Τα τελευταία απαγορεύονται πλήρως.</p>`,
-    category: categories[5],
+    category: c.kosmos,
     author: authors.elena,
     publishedAt: '2025-06-04T14:00:00Z',
     readTime: 6,
@@ -325,7 +325,7 @@ export const articles: Article[] = [
     excerpt:
       'Με νέο showroom στη Θεσσαλονίκη και χαμηλότερες τιμές, η Tesla αλλάζει τη δυναμική της ελληνικής αγοράς αυτοκινήτων. Αξίζει να το αγοράσεις;',
     content: `<p>Η Tesla έφερε επανάσταση στην ελληνική αγορά αυτοκινήτων — και τα νούμερα το αποδεικνύουν. Το 2025, ένα στα οχτώ νέα αυτοκίνητα που πωλούνται στην Ελλάδα είναι ηλεκτρικό.</p>`,
-    category: categories[1],
+    category: c.plus,
     author: authors.nikos,
     publishedAt: '2025-06-04T09:00:00Z',
     readTime: 4,
@@ -342,7 +342,7 @@ export const articles: Article[] = [
     excerpt:
       'Η Athena.ai, startup AI για υγεία από την Αθήνα, έγινε πρωτοσέλιδο σε Times και Forbes. Συνάντησα τους ιδρυτές και έμαθα πώς χτίζεται μια παγκόσμια επιχείρηση από Ελλάδα.',
     content: `<p>Όταν η Δήμητρα Λεφάκη και ο Παναγιώτης Στεφάνου ίδρυσαν την Athena.ai το 2021, δεν φανταζόταν ότι τρία χρόνια μετά θα γίνονταν πρωτοσέλιδο σε Times και Forbes.</p>`,
-    category: categories[3],
+    category: c.oikonomia,
     author: authors.giorgos,
     publishedAt: '2025-06-03T16:00:00Z',
     readTime: 5,
@@ -361,7 +361,7 @@ export const articles: Article[] = [
     content: `<p>Το internet ξέρει να εκπλήσσει. Εν μέσω geopolitical tensions και economic uncertainty, αυτό που κατάφερε να ενώσει τον κόσμο ήταν... ένα ελληνικό χορό.</p>
 
 <p>Το #GreekDanceChallenge ξεκίνησε όταν μια ομάδα Ελλήνων φοιτητών στη Νέα Υόρκη ανέβασε ένα βίντεο χορεύοντας καλαματιανό στο Central Park. Σε μία εβδομάδα, το βίντεο είχε 40 εκατ. views.</p>`,
-    category: categories[6],
+    category: c.plus,
     author: authors.kostas,
     publishedAt: '2025-06-03T11:00:00Z',
     readTime: 3,

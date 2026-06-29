@@ -3,7 +3,10 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT } from '@/lib/article-mapper';
-import { SITE_URL, canonicalUrl, websiteJsonLd, organizationJsonLd } from '@/lib/seo';
+import { websiteJsonLd } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
+import { SITE } from '@/config/site';
+import { DISPLAY_CATEGORIES } from '@/config/categories';
 import FeaturedArticle from '@/components/articles/FeaturedArticle';
 import ArticleCard from '@/components/articles/ArticleCard';
 import ArticleGrid from '@/components/articles/ArticleGrid';
@@ -12,15 +15,14 @@ import NewsletterSection from '@/components/sections/NewsletterSection';
 import DiscussionTopics from '@/components/sections/DiscussionTopics';
 
 export const metadata: Metadata = {
-  title: 'ΑΙΣΧΟΛΙΑΣΜΟΣ — Η επικαιρότητα με έξυπνο σχολιασμό',
-  description:
-    'Ενημερωτικό portal για AI, Τεχνολογία, Οικονομία, Επιχειρηματικότητα και ό,τι αξίζει να ξέρεις.',
-  alternates: { canonical: SITE_URL },
+  title: `${BRAND.name} — ${BRAND.tagline}`,
+  description: BRAND.description,
+  alternates: { canonical: BRAND.domain },
   openGraph: {
     type: 'website',
-    url: SITE_URL,
-    siteName: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
-    locale: 'el_GR',
+    url: BRAND.domain,
+    siteName: BRAND.name,
+    locale: SITE.locale,
   },
 };
 
@@ -33,6 +35,7 @@ export default async function HomePage() {
       select: ARTICLE_PUBLIC_SELECT,
     }),
     prisma.category.findMany({
+      where: { slug: { in: DISPLAY_CATEGORIES.map((c) => c.slug) } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, slug: true, color: true },
     }),
@@ -46,7 +49,6 @@ export default async function HomePage() {
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
           <p className="text-xl text-slate-400">Δεν υπάρχουν ακόμη δημοσιευμένα άρθρα.</p>
           <p className="text-sm text-slate-400 mt-2">Χρησιμοποίησε το admin panel για να δημιουργήσεις και να εγκρίνεις άρθρα.</p>
@@ -58,7 +60,6 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd()) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }} />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero: Featured + latest 4 in column */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">

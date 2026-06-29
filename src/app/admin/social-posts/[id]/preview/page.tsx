@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import AdminShell from '@/components/admin/AdminShell';
 import PublishToFacebookButton from './PublishToFacebookButton';
+import { BRAND } from '@/config/brand';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,7 +126,7 @@ export default async function SocialPostPreviewPage({ params }: PageProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-bold text-sm text-gray-900 dark:text-gray-100 leading-tight">
-                      ΑΙΣΧΟΛΙΑΣΜΟΣ
+                      {BRAND.name}
                     </p>
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -173,7 +174,7 @@ export default async function SocialPostPreviewPage({ params }: PageProps) {
             {/* Article meta */}
             <div className="px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5">
-                aisxoliasmos.gr
+                {new URL(BRAND.domain).hostname}
               </p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">
                 {post.article.title}

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { canonicalUrl } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
 
 export const metadata: Metadata = {
-  title: 'Πολιτική Χρήσης AI | ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Πολιτική Χρήσης AI | ${BRAND.name}`,
   description:
     'Πώς χρησιμοποιούμε την τεχνητή νοημοσύνη στη δημιουργία περιεχομένου και τι σημαίνει αυτό για τους αναγνώστες μας.',
   alternates: { canonical: canonicalUrl('/ai-policy') },
@@ -51,7 +52,7 @@ export default function AIPolicyPage() {
         </div>
         <h1 className="text-3xl font-black text-slate-900 mb-3">Πολιτική Χρήσης AI</h1>
         <p className="text-slate-500 leading-relaxed">
-          Στο ΑΙΣΧΟΛΙΑΣΜΟΣ, η τεχνητή νοημοσύνη είναι μέρος της δουλειάς μας. Εδώ εξηγούμε ακριβώς πώς και γιατί.
+          Στο {BRAND.name}, η τεχνητή νοημοσύνη είναι μέρος της δουλειάς μας. Εδώ εξηγούμε ακριβώς πώς και γιατί.
         </p>
         <p className="text-xs text-slate-400 mt-3">Τελευταία ενημέρωση: Ιούνιος 2026</p>
       </header>
@@ -74,7 +75,7 @@ export default function AIPolicyPage() {
 
       <div className="mt-10 bg-slate-50 rounded-xl p-6 border border-slate-200 text-sm">
         <p className="font-semibold text-slate-800 mb-3">Έχετε ερωτήσεις για τη χρήση AI;</p>
-        <p className="text-slate-600 mb-3">Επικοινωνήστε στο <a href="mailto:ai@aisxoliasmos.gr" className="text-red-600 hover:underline">ai@aisxoliasmos.gr</a></p>
+        <p className="text-slate-600 mb-3">Επικοινωνήστε στο <a href={`mailto:${BRAND.aiEmail}`} className="text-red-600 hover:underline">{BRAND.aiEmail}</a></p>
         <div className="flex flex-wrap gap-3">
           <Link href="/editorial-policy" className="text-red-600 hover:text-red-700 hover:underline">Συντακτική Πολιτική</Link>
           <Link href="/transparency" className="text-red-600 hover:text-red-700 hover:underline">Διαφάνεια</Link>

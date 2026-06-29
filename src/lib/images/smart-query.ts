@@ -53,6 +53,7 @@ const ENTITY_VISUAL_MAP: Record<string, string> = {
 };
 
 const CATEGORY_FALLBACKS: Record<string, string[]> = {
+  // Internal categories (used by pipeline)
   'AI':                 ['artificial intelligence robot', 'machine learning neural network', 'AI technology future'],
   'Τεχνολογία':         ['technology innovation digital', 'computer software developer', 'tech startup office'],
   'Οικονομία':          ['financial markets trading', 'stock exchange economy', 'business finance money'],
@@ -61,6 +62,12 @@ const CATEGORY_FALLBACKS: Record<string, string[]> = {
   'Κόσμος':             ['world globe diplomacy', 'international summit meeting', 'global news politics'],
   'Viral':              ['social media smartphone', 'trending internet content', 'viral video screen'],
   'Απόψεις':            ['newspaper editorial journalism', 'journalist writing media', 'opinion press'],
+  'Αθλητικά':          ['sports stadium athlete', 'football game competition', 'sports training fitness'],
+  'Καιρός':             ['weather storm clouds', 'rain nature sky', 'sun weather forecast'],
+  // Display categories (frontend navigation)
+  'Υγεία':              ['healthcare doctor hospital', 'medical research wellness', 'health medicine care'],
+  'Media':              ['journalism broadcast media', 'news studio television', 'newspaper press journalism'],
+  'Plus':               ['technology digital innovation', 'social media internet', 'tech lifestyle modern'],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

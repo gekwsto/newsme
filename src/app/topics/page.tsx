@@ -4,13 +4,15 @@ import { BookOpen } from 'lucide-react';
 import { CLUSTERS } from '@/services/evergreen-clusters';
 import { prisma } from '@/lib/db';
 import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
+import { canonicalUrl } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Θέματα & Clusters | ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Θέματα & Clusters | ${BRAND.name}`,
   description: 'Εξερευνήστε 20 θεματικά clusters με 500+ evergreen άρθρα για AI, Τεχνολογία, Επιχειρηματικότητα και Οικονομία.',
-  alternates: { canonical: 'https://aisxoliasmos.gr/topics' },
+  alternates: { canonical: canonicalUrl('/topics') },
 };
 
 export default async function TopicsIndexPage() {
@@ -47,12 +49,17 @@ export default async function TopicsIndexPage() {
     {} as Record<string, typeof CLUSTERS>,
   );
 
-  const categoryOrder = ['AI', 'Τεχνολογία', 'Επιχειρηματικότητα', 'Οικονομία'];
+  const categoryOrder = ['Ελλάδα', 'Κόσμος', 'Οικονομία', 'Υγεία', 'Media', 'Plus', 'AI', 'Τεχνολογία', 'Επιχειρηματικότητα'];
   const categoryColors: Record<string, string> = {
+    Ελλάδα: '#0891b2',
+    Κόσμος: '#4f46e5',
+    Οικονομία: '#059669',
+    Υγεία: '#16a34a',
+    Media: '#db2777',
+    Plus: '#7c3aed',
     AI: '#6366f1',
     Τεχνολογία: '#0ea5e9',
     Επιχειρηματικότητα: '#10b981',
-    Οικονομία: '#f59e0b',
   };
 
   return (

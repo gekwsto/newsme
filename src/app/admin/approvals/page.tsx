@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Clock, CheckSquare } from 'lucide-react';
@@ -12,7 +13,7 @@ import ApprovalActions from './ApprovalActions';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Approval Queue | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Approval Queue | Admin ${BRAND.name}`,
 };
 
 const sourceLabels: Record<SourceType, string> = {

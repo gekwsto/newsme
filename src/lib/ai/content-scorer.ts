@@ -177,7 +177,7 @@ async function scoreBatch(client: OpenAI, articles: ArticleInput[]): Promise<Art
     )
     .join('\n\n');
 
-  const systemPrompt = `Είσαι editorial AI για το ελληνικό news portal ΑΙΣΧΟΛΙΑΣΜΟΣ. Αξιολογείς ειδήσεις για ελληνικό κοινό στο Facebook.
+  const systemPrompt = `Είσαι editorial AI για το ελληνικό news portal NewsMe. Αξιολογείς ειδήσεις για ελληνικό κοινό στο Facebook.
 
 ═══════════════════════════════════════
 ΑΥΤΟΜΑΤΗ ΑΠΟΡΡΙΨΗ — βάλε rejected:true, totalScore:0

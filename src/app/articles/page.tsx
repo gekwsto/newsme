@@ -3,10 +3,12 @@ import { prisma } from '@/lib/db';
 import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT } from '@/lib/article-mapper';
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
+import { BRAND } from '@/config/brand';
+import { DISPLAY_CATEGORIES } from '@/config/categories';
 
 export const metadata: Metadata = {
-  title: 'Όλα τα Άρθρα | ΑΙΣΧΟΛΙΑΣΜΟΣ',
-  description: 'Εξερεύνησε όλα τα άρθρα του ΑΙΣΧΟΛΙΑΣΜΟΣ — AI, Τεχνολογία, Οικονομία και πολλά άλλα.',
+  title: `Όλα τα Άρθρα | ${BRAND.name}`,
+  description: `Εξερεύνησε όλα τα άρθρα του ${BRAND.name} — AI, Τεχνολογία, Οικονομία και πολλά άλλα.`,
 };
 
 export default async function ArticlesPage() {
@@ -18,6 +20,7 @@ export default async function ArticlesPage() {
       select: ARTICLE_PUBLIC_SELECT,
     }),
     prisma.category.findMany({
+      where: { slug: { in: DISPLAY_CATEGORIES.map((c) => c.slug) } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, slug: true, color: true },
     }),

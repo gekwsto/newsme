@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
@@ -14,7 +15,7 @@ import AdminShell from '@/components/admin/AdminShell';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Dashboard | Admin ${BRAND.name}`,
 };
 
 const articleStatusConfig = {

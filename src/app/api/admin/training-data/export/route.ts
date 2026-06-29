@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
   }
 
   const date = new Date().toISOString().slice(0, 10);
-  const filename = `aisxoliasmos-training-${format}-${quality}-${date}-${examples.length}ex.${ext}`;
+  const filename = `newsme-training-${format}-${quality}-${date}-${examples.length}ex.${ext}`;
 
   return new NextResponse(output, {
     status: 200,

@@ -2,13 +2,21 @@ import Link from 'next/link';
 import { Rss, Mail } from 'lucide-react';
 import { XIcon, FacebookIcon, InstagramIcon } from '@/components/ui/SocialIcons';
 import { prisma } from '@/lib/db';
+import Logo from '@/components/ui/Logo';
+import { BRAND } from '@/config/brand';
+import { DISPLAY_CATEGORIES } from '@/config/categories';
 
 export default async function Footer() {
   const year = new Date().getFullYear();
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' },
+  const displaySlugs = DISPLAY_CATEGORIES.map((c) => c.slug);
+  const rawCategories = await prisma.category.findMany({
+    where: { slug: { in: displaySlugs } },
     select: { name: true, slug: true },
   });
+  // Sort by DISPLAY_CATEGORIES order
+  const categories = DISPLAY_CATEGORIES
+    .map((dc) => rawCategories.find((c) => c.slug === dc.slug))
+    .filter((c): c is { name: string; slug: string } => c != null);
 
   return (
     <footer className="bg-slate-900 text-slate-400 mt-16">
@@ -17,43 +25,46 @@ export default async function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="inline-flex flex-col leading-none mb-3">
-              <span className="font-black text-lg tracking-widest">
-                <span className="text-red-500">ΑΙ</span>
-                <span className="text-white">ΣΧΟΛΙΑΣΜΟΣ</span>
-              </span>
+              <Logo />
             </Link>
             <p className="text-sm leading-relaxed mb-4">
-              Η επικαιρότητα με έξυπνο σχολιασμό. Τεχνολογία, οικονομία, επιχειρηματικότητα και
-              ό,τι αξίζει να ξέρεις — κάθε μέρα.
+              {BRAND.tagline} Ελλάδα, Κόσμος, Οικονομία, Υγεία, Media και ό,τι
+              αξίζει να ξέρεις — κάθε μέρα.
             </p>
             <div className="flex items-center gap-3">
-              <a
-                href="https://twitter.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-                aria-label="Twitter"
-              >
-                <XIcon size={18} />
-              </a>
-              <a
-                href="https://facebook.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-                aria-label="Facebook"
-              >
-                <FacebookIcon size={18} />
-              </a>
-              <a
-                href="https://instagram.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-                aria-label="Instagram"
-              >
-                <InstagramIcon size={18} />
-              </a>
+              {BRAND.twitter && (
+                <a
+                  href={BRAND.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                  aria-label="Twitter"
+                >
+                  <XIcon size={18} />
+                </a>
+              )}
+              {BRAND.facebook && (
+                <a
+                  href={BRAND.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                  aria-label="Facebook"
+                >
+                  <FacebookIcon size={18} />
+                </a>
+              )}
+              {BRAND.instagram && (
+                <a
+                  href={BRAND.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                  aria-label="Instagram"
+                >
+                  <InstagramIcon size={18} />
+                </a>
+              )}
               <a
                 href="/feed.xml"
                 className="hover:text-white transition-colors"
@@ -127,7 +138,7 @@ export default async function Footer() {
         </div>
 
         <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <p>© {year} ΑΙΣΧΟΛΙΑΣΜΟΣ — aisxoliasmos.gr. Όλα τα δικαιώματα διατηρούνται.</p>
+          <p>© {year} {BRAND.name} — {new URL(BRAND.domain).hostname}. Όλα τα δικαιώματα διατηρούνται.</p>
           <p className="flex items-center gap-1">
             Φτιαγμένο με ❤️ στην Ελλάδα
           </p>

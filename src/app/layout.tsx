@@ -4,6 +4,9 @@ import './globals.css';
 import HeaderWrapper from '@/components/layout/HeaderWrapper';
 import Footer from '@/components/layout/Footer';
 import ThemeProvider from '@/components/ThemeProvider';
+import { BRAND } from '@/config/brand';
+import { SITE } from '@/config/site';
+import { organizationJsonLd } from '@/lib/seo';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,30 +19,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://aisxoliasmos.gr'),
+  metadataBase: new URL(BRAND.domain),
   title: {
-    default: 'ΑΙΣΧΟΛΙΑΣΜΟΣ — Η επικαιρότητα με έξυπνο σχολιασμό',
-    template: '%s | ΑΙΣΧΟΛΙΑΣΜΟΣ',
+    default: `${BRAND.name} — ${BRAND.tagline}`,
+    template: `%s | ${BRAND.name}`,
   },
-  description:
-    'Ενημερωτικό portal για AI, Τεχνολογία, Οικονομία, Επιχειρηματικότητα και Επικαιρότητα. Έξυπνος σχολιασμός, καθημερινά.',
+  description: BRAND.description,
   keywords: ['AI', 'τεχνολογία', 'οικονομία', 'ειδήσεις', 'Ελλάδα', 'επιχειρηματικότητα'],
-  authors: [{ name: 'ΑΙΣΧΟΛΙΑΣΜΟΣ', url: 'https://aisxoliasmos.gr' }],
+  authors: [{ name: BRAND.author, url: BRAND.domain }],
   openGraph: {
     type: 'website',
-    locale: 'el_GR',
-    url: 'https://aisxoliasmos.gr',
-    siteName: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
-    title: 'ΑΙΣΧΟΛΙΑΣΜΟΣ — Η επικαιρότητα με έξυπνο σχολιασμό',
-    description:
-      'Ενημερωτικό portal για AI, Τεχνολογία, Οικονομία, Επιχειρηματικότητα και Επικαιρότητα.',
+    locale: SITE.locale,
+    url: BRAND.domain,
+    siteName: BRAND.name,
+    title: `${BRAND.name} — ${BRAND.tagline}`,
+    description: BRAND.description,
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@aisxoliasmos',
-    creator: '@aisxoliasmos',
-    title: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
-    description: 'Η επικαιρότητα με έξυπνο σχολιασμό.',
+    site: BRAND.twitterHandle,
+    creator: BRAND.twitterHandle,
+    title: BRAND.name,
+    description: BRAND.tagline,
   },
   robots: { index: true, follow: true },
 };
@@ -48,8 +49,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="el" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang={SITE.language} className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body className="antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+        {/* Global NewsMediaOrganization schema — rendered once for every page */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
+        />
         <ThemeProvider>
           <HeaderWrapper />
           <main className="min-h-screen">{children}</main>

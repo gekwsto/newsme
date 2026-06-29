@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -9,7 +10,7 @@ import { TrainingDataType } from '@/generated/prisma/enums';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Training Data | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Training Data | Admin ${BRAND.name}`,
 };
 
 const TYPE_LABEL: Record<TrainingDataType, string> = {

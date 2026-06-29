@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Mail, MapPin, CheckCircle, Send } from 'lucide-react';
 import { XIcon, FacebookIcon, InstagramIcon } from '@/components/ui/SocialIcons';
+import { BRAND } from '@/config/brand';
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -37,10 +38,10 @@ export default function ContactPage() {
             </div>
             <h3 className="font-bold text-slate-900 text-sm mb-1">Email</h3>
             <a
-              href="mailto:info@aisxoliasmos.gr"
+              href={`mailto:${BRAND.email}`}
               className="text-red-600 hover:text-red-700 text-sm"
             >
-              info@aisxoliasmos.gr
+              {BRAND.email}
             </a>
           </div>
 
@@ -55,30 +56,36 @@ export default function ContactPage() {
           <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
             <h3 className="font-bold text-slate-900 text-sm mb-3">Social Media</h3>
             <div className="flex gap-3">
-              <a
-                href="https://twitter.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 bg-slate-100 hover:bg-[#1DA1F2] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
-              >
-                <XIcon size={16} />
-              </a>
-              <a
-                href="https://facebook.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 bg-slate-100 hover:bg-[#1877F2] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
-              >
-                <FacebookIcon size={16} />
-              </a>
-              <a
-                href="https://instagram.com/aisxoliasmos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 bg-slate-100 hover:bg-[#E1306C] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
-              >
-                <InstagramIcon size={16} />
-              </a>
+              {BRAND.twitter && (
+                <a
+                  href={BRAND.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-slate-100 hover:bg-[#1DA1F2] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <XIcon size={16} />
+                </a>
+              )}
+              {BRAND.facebook && (
+                <a
+                  href={BRAND.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-slate-100 hover:bg-[#1877F2] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <FacebookIcon size={16} />
+                </a>
+              )}
+              {BRAND.instagram && (
+                <a
+                  href={BRAND.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-slate-100 hover:bg-[#E1306C] text-slate-600 hover:text-white rounded-lg flex items-center justify-center transition-colors"
+                >
+                  <InstagramIcon size={16} />
+                </a>
+              )}
             </div>
           </div>
 
@@ -86,8 +93,8 @@ export default function ContactPage() {
             <p className="font-semibold text-slate-700 mb-1">Για δημοσιογράφους</p>
             <p>
               Αν ψάχνετε για σχολιασμό από την ομάδα μας, επικοινωνήστε στο{' '}
-              <a href="mailto:press@aisxoliasmos.gr" className="text-red-600">
-                press@aisxoliasmos.gr
+              <a href={`mailto:${BRAND.pressEmail}`} className="text-red-600">
+                {BRAND.pressEmail}
               </a>
             </p>
           </div>

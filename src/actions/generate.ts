@@ -2,22 +2,10 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { generateArticleContent } from '@/lib/ai/content-generator';
+import { generateArticleContent, PROMPT_VERSION, GENERATOR_VERSION } from '@/lib/ai/content-generator';
 import { GenerateInputSchema, type GenerateInput } from '@/lib/ai/schemas';
 import { ArticleStatus, SourceType, SocialPostStatus, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
-
-async function resolveSuggestedCategory(
-  suggestedCategory: string | undefined,
-  fallbackId: string
-): Promise<string> {
-  if (!suggestedCategory) return fallbackId;
-  const cat = await prisma.category.findFirst({
-    where: { name: suggestedCategory },
-    select: { id: true },
-  });
-  return cat?.id ?? fallbackId;
-}
 
 export type GenerateResult =
   | { ok: true; articleId: string; title: string }
@@ -72,7 +60,7 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
       validated.sourceUrl ? SourceType.RSS_SUMMARY : SourceType.AI_GENERATED;
 
     const slug = await uniqueSlug(generated.slug || 'article');
-    const categoryId = await resolveSuggestedCategory(generated.suggestedCategory, validated.categoryId);
+    const categoryId = validated.categoryId;
 
     // Create Article
     const article = await prisma.article.create({
@@ -100,8 +88,10 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
         articleId: article.id,
         prompt: validated.topic,
         rawOutput: JSON.stringify(generated),
-        model: 'gpt-4o',
+        model: 'gpt-5-mini',
         imagePrompt: generated.imagePrompt || null,
+        promptVersion: PROMPT_VERSION,
+        generatorVersion: GENERATOR_VERSION,
       },
     });
 
@@ -117,7 +107,9 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
       generatedTitle: generated.title,
       generatedExcerpt: generated.excerpt,
       generatedTags: generated.tags,
-      category: generated.suggestedCategory,
+      category: category.name,
+      promptVersion: PROMPT_VERSION,
+      generatorVersion: GENERATOR_VERSION,
     });
 
     // Create Facebook SocialPost if requested

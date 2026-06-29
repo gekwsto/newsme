@@ -1,12 +1,15 @@
-export const SITE_URL = 'https://aisxoliasmos.gr';
-export const SITE_NAME = 'ΑΙΣΧΟΛΙΑΣΜΟΣ';
-export const SITE_DESCRIPTION =
-  'Ενημερωτικό portal για AI, Τεχνολογία, Οικονομία και Επικαιρότητα με έξυπνο σχολιασμό.';
-export const SITE_LOCALE = 'el_GR';
-export const SITE_TWITTER = '@aisxoliasmos';
+import { BRAND } from '@/config/brand';
+import { SITE } from '@/config/site';
+
+export const SITE_URL = BRAND.domain;
+export const SITE_NAME = BRAND.name;
+export const SITE_DESCRIPTION = BRAND.description;
+export const SITE_LOCALE = SITE.locale;
+export const SITE_TWITTER = BRAND.twitterHandle;
+export const DEFAULT_OG_IMAGE = `${BRAND.domain}${BRAND.ogImage}`;
 
 export function canonicalUrl(path: string): string {
-  return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  return `${BRAND.domain}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export function articleCanonical(slug: string): string {
@@ -18,21 +21,32 @@ export function categoryCanonical(slug: string): string {
 }
 
 export function organizationJsonLd() {
+  const sameAs = [BRAND.twitter, BRAND.facebook, BRAND.instagram, BRAND.youtube].filter(Boolean);
   return {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
-    '@id': `${SITE_URL}/#organization`,
-    name: SITE_NAME,
-    url: SITE_URL,
-    sameAs: [
-      'https://twitter.com/aisxoliasmos',
-      'https://facebook.com/aisxoliasmos',
-      'https://instagram.com/aisxoliasmos',
-    ],
+    '@type': 'NewsMediaOrganization',
+    '@id': `${BRAND.domain}/#organization`,
+    name: BRAND.name,
+    url: BRAND.domain,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${BRAND.domain}${BRAND.logo}`,
+      width: BRAND.logoWidth,
+      height: BRAND.logoHeight,
+    },
+    ...(sameAs.length ? { sameAs } : {}),
+    foundingDate: BRAND.foundingDate,
+    founders: BRAND.founders.map((name) => ({ '@type': 'Person', name })),
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: BRAND.addressLocality,
+      addressCountry: SITE.country,
+    },
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'info@aisxoliasmos.gr',
-      contactType: 'editorial',
+      contactType: 'Editorial',
+      email: BRAND.editorialEmail,
+      url: BRAND.contactUrl,
     },
   };
 }
@@ -41,17 +55,17 @@ export function websiteJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    '@id': `${SITE_URL}/#website`,
-    name: SITE_NAME,
-    url: SITE_URL,
-    description: SITE_DESCRIPTION,
-    inLanguage: 'el',
-    publisher: { '@id': `${SITE_URL}/#organization` },
+    '@id': `${BRAND.domain}/#website`,
+    name: BRAND.name,
+    url: BRAND.domain,
+    description: BRAND.description,
+    inLanguage: SITE.language,
+    publisher: { '@id': `${BRAND.domain}/#organization` },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${SITE_URL}/articles?q={search_term_string}`,
+        urlTemplate: `${BRAND.domain}/articles?q={search_term_string}`,
       },
       'query-input': 'required name=search_term_string',
     },
@@ -78,44 +92,90 @@ export function newsArticleJsonLd(article: {
   publishedAt: string;
   updatedAt: string;
   author: string;
+  /** Display category name (not internal slug) */
   category: string;
   tags: string[];
   imageUrl?: string;
   articleType?: string;
+  /** Plain-text article body, pre-stripped of HTML, max ~20 000 chars */
+  articleBody?: string;
 }) {
   const schemaType = article.articleType === 'NEWS' ? 'NewsArticle' : 'Article';
-  return {
+
+  const headline =
+    article.title.length > 110 ? `${article.title.slice(0, 107)}…` : article.title;
+  const description =
+    (article.excerpt || '').length > 160
+      ? `${article.excerpt.slice(0, 157)}…`
+      : article.excerpt || '';
+  const keywords = [article.category, ...article.tags].filter(Boolean).join(', ');
+
+  const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': schemaType,
     '@id': articleCanonical(article.slug),
-    headline: article.title,
-    description: article.excerpt,
-    datePublished: article.publishedAt,
-    dateModified: article.updatedAt,
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': articleCanonical(article.slug),
     },
+    headline,
+    description,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt,
     author: {
       '@type': 'Person',
       name: article.author,
     },
-    publisher: { '@id': `${SITE_URL}/#organization` },
-    isPartOf: { '@id': `${SITE_URL}/#website` },
+    publisher: {
+      '@type': 'NewsMediaOrganization',
+      '@id': `${BRAND.domain}/#organization`,
+      name: BRAND.name,
+      url: BRAND.domain,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${BRAND.domain}${BRAND.logo}`,
+        width: BRAND.logoWidth,
+        height: BRAND.logoHeight,
+      },
+    },
+    isPartOf: { '@id': `${BRAND.domain}/#website` },
     articleSection: article.category,
-    keywords: article.tags.join(', '),
-    inLanguage: 'el',
-    ...(article.imageUrl
-      ? {
-          image: {
-            '@type': 'ImageObject',
-            url: article.imageUrl,
-            width: 1200,
-            height: 630,
-          },
-        }
-      : {}),
+    keywords,
+    inLanguage: SITE.language,
   };
+
+  if (article.imageUrl) {
+    const absoluteImageUrl = article.imageUrl.startsWith('http')
+      ? article.imageUrl
+      : `${BRAND.domain}${article.imageUrl}`;
+    schema.image = {
+      '@type': 'ImageObject',
+      url: absoluteImageUrl,
+      width: 1200,
+      height: 630,
+    };
+  }
+
+  if (article.articleBody) {
+    schema.articleBody = article.articleBody;
+  }
+
+  return schema;
+}
+
+/** Strip HTML tags and decode common entities. Safe for server-only use (no DOM). */
+export function stripHtmlToText(html: string, maxLength = 20_000): string {
+  const text = html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
 }
 
 export function faqPageJsonLd(items: { question: string; answer: string }[]) {
@@ -143,10 +203,10 @@ export function categoryPageJsonLd(category: {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     '@id': categoryCanonical(category.slug),
-    name: `${category.name} — ${SITE_NAME}`,
+    name: `${category.name} — ${BRAND.name}`,
     description: category.description,
     url: categoryCanonical(category.slug),
-    inLanguage: 'el',
-    isPartOf: { '@id': `${SITE_URL}/#website` },
+    inLanguage: SITE.language,
+    isPartOf: { '@id': `${BRAND.domain}/#website` },
   };
 }

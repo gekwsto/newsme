@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { redirect } from 'next/navigation';
 import { Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -9,7 +10,7 @@ import AdminShell from '@/components/admin/AdminShell';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Pipeline Logs | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Pipeline Logs | Admin ${BRAND.name}`,
 };
 
 const PIPELINE_SERVICES = ['scheduler', 'rss', 'scoring', 'article', 'facebook'];

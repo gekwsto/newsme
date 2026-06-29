@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -9,7 +10,7 @@ import ImageManager from './ImageManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Επεξεργασία Άρθρου | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Επεξεργασία Άρθρου | Admin ${BRAND.name}`,
 };
 
 export default async function ArticleEditPage({

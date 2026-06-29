@@ -29,15 +29,9 @@ export const articleTypeLabels: Record<ArticleType, string> = {
 };
 
 export const targetLengthLabels: Record<TargetLength, string> = {
-  short: 'Σύντομο (600-800 λέξεις)',
-  medium: 'Μεσαίο (800-1100 λέξεις)',
-  long: 'Εκτεταμένο (1100-1500 λέξεις)',
-};
-
-export const wordCountMap: Record<TargetLength, string> = {
-  short: '600-800',
-  medium: '800-1100',
-  long: '1100-1500',
+  short: 'Σύντομο (350-550 λέξεις)',
+  medium: 'Μεσαίο (600-900 λέξεις)',
+  long: 'Εκτεταμένο (900-1400 λέξεις)',
 };
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
@@ -60,13 +54,6 @@ export type GenerateInput = z.infer<typeof GenerateInputSchema>;
 
 // ─── AI response schema ───────────────────────────────────────────────────────
 
-export const CATEGORY_NAMES = [
-  'AI', 'Τεχνολογία', 'Οικονομία', 'Επιχειρηματικότητα',
-  'Ελλάδα', 'Κόσμος', 'Viral', 'Απόψεις',
-] as const;
-
-export type CategoryName = (typeof CATEGORY_NAMES)[number];
-
 export const GeneratedArticleSchema = z.object({
   title: z.string().min(1),
   slug: z.string().min(1),
@@ -78,7 +65,6 @@ export const GeneratedArticleSchema = z.object({
   facebookPost: z.string(),
   imagePrompt: z.string(),
   tags: z.array(z.string()).default([]),
-  suggestedCategory: z.string().optional(),
 });
 
 export type GeneratedArticle = z.infer<typeof GeneratedArticleSchema>;

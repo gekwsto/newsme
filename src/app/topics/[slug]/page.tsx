@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { BookOpen, TrendingUp, Star, ArrowRight } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { CLUSTERS, getClusterBySlug } from '@/services/evergreen-clusters';
-import { SITE_URL } from '@/lib/seo';
+import { SITE_URL, SITE_NAME, SITE_TWITTER, DEFAULT_OG_IMAGE } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
 import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
 import { formatRelativeDate } from '@/lib/utils';
 
@@ -37,6 +38,16 @@ export async function generateMetadata({
       url,
       type: 'website',
       locale: 'el_GR',
+      siteName: SITE_NAME,
+      images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      site: SITE_TWITTER,
+      creator: SITE_TWITTER,
+      title,
+      description,
+      images: [DEFAULT_OG_IMAGE],
     },
   };
 }
@@ -112,7 +123,7 @@ export default async function TopicHubPage({
     url: `${SITE_URL}/topics/${slug}`,
     publisher: {
       '@type': 'Organization',
-      name: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
+      name: BRAND.name,
       url: SITE_URL,
     },
     about: {

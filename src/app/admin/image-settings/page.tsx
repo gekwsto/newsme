@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { redirect } from 'next/navigation';
 import { ImageIcon } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -10,7 +11,7 @@ import ImageSettingsForm from './ImageSettingsForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Image Settings | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Image Settings | Admin ${BRAND.name}`,
 };
 
 export default async function ImageSettingsPage() {

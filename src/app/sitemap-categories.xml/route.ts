@@ -1,11 +1,14 @@
 import { SITE_URL } from '@/lib/seo';
 import { prisma } from '@/lib/db';
 import { xmlEscape, xmlResponse } from '@/lib/xml';
+import { DISPLAY_CATEGORIES } from '@/config/categories';
 
 export const revalidate = 3600;
 
 export async function GET() {
+  const displaySlugs = DISPLAY_CATEGORIES.map((c) => c.slug);
   const categories = await prisma.category.findMany({
+    where: { slug: { in: displaySlugs } },
     select: { slug: true },
     orderBy: { name: 'asc' },
   });

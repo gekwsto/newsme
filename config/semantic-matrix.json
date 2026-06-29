@@ -44,9 +44,10 @@
       ]
     },
     "Οικονομία": {
-      "weight": 1.1,
+      "weight": 1.5,
       "priorityEntities": [
-        "bitcoin", "fed", "ecb", "imf", "world bank", "federal reserve"
+        "bitcoin", "fed", "ecb", "imf", "world bank", "federal reserve",
+        "ΟΠΕΚΑ", "ΕΦΚΑ", "ΑΣΕΠ", "ΑΑΔΕ", "ΕΝΦΙΑ"
       ],
       "keywords": [
         "bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain",
@@ -60,8 +61,38 @@
         "investment", "etf", "hedge fund", "pension", "tax",
         "prices", "cost of living", "energy prices", "gas prices",
         "supply chain", "trade war", "tariffs", "sanctions",
-        "markets", "rally", "crash", "correction", "bear market", "bull market"
-      ]
+        "markets", "rally", "crash", "correction", "bear market", "bull market",
+        "ΟΠΕΚΑ", "ΕΦΚΑ", "e-ΕΦΚΑ", "ΑΣΕΠ", "ΔΥΠΑ", "ΕΣΠΑ", "ΕΕΤΑΑ", "ΑΑΔΕ", "myAADE", "ΕΝΦΙΑ",
+        "επίδομα", "συντάξεις", "αναδρομικά", "προσλήψεις", "μισθός",
+        "φορολογία", "φόρος", "επενδύσεις", "ανάπτυξη", "τράπεζα"
+      ],
+      "mustPassTagGroups": {
+        "agencies_benefits": {
+          "tags": ["ΟΠΕΚΑ", "Α21", "επίδομα παιδιού", "ΕΦΚΑ", "e-ΕΦΚΑ"],
+          "requiredMatches": 1,
+          "mustPassScore": 100
+        },
+        "agencies_employment_tax": {
+          "tags": ["ΑΣΕΠ", "ΔΥΠΑ", "ΕΣΠΑ", "ΕΕΤΑΑ", "ΑΑΔΕ", "myAADE", "ΕΝΦΙΑ"],
+          "requiredMatches": 1,
+          "mustPassScore": 95
+        },
+        "generic_benefits": {
+          "tags": ["επιδόματα", "πληρωμές", "συντάξεις", "αναδρομικά"],
+          "requiredMatches": 2,
+          "mustPassScore": 100
+        },
+        "generic_employment": {
+          "tags": ["προσλήψεις", "προκηρύξεις"],
+          "requiredMatches": 2,
+          "mustPassScore": 95
+        },
+        "generic_fiscal": {
+          "tags": ["voucher", "παιδικοί σταθμοί", "κατώτατος μισθός", "τέλη κυκλοφορίας", "φορολογικές δηλώσεις"],
+          "requiredMatches": 2,
+          "mustPassScore": 95
+        }
+      }
     },
     "Επιχειρηματικότητα": {
       "weight": 1.1,
@@ -89,27 +120,37 @@
         "ελλάδα", "αθήνα", "θεσσαλονίκη"
       ],
       "keywords": [
-        "ελλάδα", "ελλαδα", "greece", "greek", "κυβέρνηση", "κυβερνηση",
-        "βουλή", "βουλη", "βουλευτής", "βουλευτης",
-        "μητσοτάκης", "μητσοτακης", "τσίπρας", "τσιπρας",
-        "ανδρουλάκης", "ανδρουλακης", "κασσελάκης", "κασσελακης",
-        "αθήνα", "αθηνα", "θεσσαλονίκη", "θεσσαλονικη",
-        "δημόσιο", "δημοσιο", "φορολογία", "φορολογια",
-        "μισθοί", "μισθοι", "συντάξεις", "συνταξεις",
-        "ακρίβεια", "ακριβεια", "ενέργεια", "ενεργεια",
-        "τουρισμός", "τουρισμος", "tourism", "εργασία", "εργασια",
-        "πανελλήνιες", "πανελληνιες", "υγεία", "υγεια",
-        "παιδεία", "παιδεια", "σεισμός", "σεισμος",
-        "οικονομία", "οικονομια", "νέα δημοκρατία", "νεα δημοκρατια",
-        "συριζα", "πασοκ", "κκε", "νέο κόμμα", "εκλογές", "εκλογες",
-        "δήμος", "δημος", "περιφέρεια", "περιφερεια",
-        "επενδύσεις", "επενδυσεις", "ελληνική", "ελληνικη"
-      ]
+        "ελλάδα", "greece", "greek",
+        "κυβέρνηση", "βουλή", "βουλευτής",
+        "μητσοτάκης", "τσίπρας", "ανδρουλάκης", "κασσελάκης",
+        "αθήνα", "θεσσαλονίκη",
+        "δημόσιο", "φορολογία", "μισθοί", "συντάξεις",
+        "ακρίβεια", "ενέργεια", "τουρισμός", "tourism",
+        "εργασία", "πανελλήνιες", "υγεία", "παιδεία", "σεισμός",
+        "οικονομία", "νέα δημοκρατία", "συριζα", "πασοκ", "κκε",
+        "νέο κόμμα", "εκλογές", "δήμος", "περιφέρεια",
+        "επενδύσεις", "ελληνική",
+        "σχολεία", "απεργία", "αργία", "ΚΟΚ", "ταυτότητες", "gov.gr"
+      ],
+      "mustPassTagGroups": {
+        "breaking_greece": {
+          "tags": ["σεισμός", "απεργία σήμερα", "νέες ταυτότητες", "νέο ΚΟΚ", "gov.gr", "ώρες κοινής ησυχίας"],
+          "requiredMatches": 1,
+          "mustPassScore": 90
+        },
+        "daily_life_greece": {
+          "tags": ["σχολεία", "κλειστά σχολεία", "αργίες", "Πάσχα", "αλλαγή ώρας", "ταυτότητες", "ΚΟΚ", "απεργία"],
+          "requiredMatches": 2,
+          "mustPassScore": 80
+        }
+      }
     },
     "Κόσμος": {
       "weight": 1.0,
       "priorityEntities": [
-        "trump", "biden", "putin", "zelensky", "china", "russia", "ukraine"
+        "trump", "biden", "putin", "zelensky", "china", "russia", "ukraine",
+        "τραμπ", "πούτιν", "ζελένσκι", "ερντογάν", "νετανιάχου", "μακρόν",
+        "ισραήλ", "ιράν", "ουκρανία", "ρωσία", "κίνα", "τουρκία"
       ],
       "keywords": [
         "trump", "biden", "putin", "zelensky", "xi jinping",
@@ -125,13 +166,101 @@
         "g7", "g20", "summit", "bilateral",
         "north korea", "south korea", "japan", "india",
         "turkey", "erdogan", "saudi arabia", "opec",
-        "france", "germany", "uk", "britain"
+        "france", "germany", "uk", "britain",
+        "τραμπ", "πούτιν", "ζελένσκι", "ερντογάν", "νετανιάχου", "μακρόν",
+        "γαλλία", "γερμανία", "βρετανία", "ισπανία", "ιταλία",
+        "ισραήλ", "ιράν", "τουρκία", "κίνα", "ρωσία", "ουκρανία",
+        "σαουδική αραβία", "αμερική", "ηπα"
       ]
     },
-    "Αθλητικά": {
-      "weight": 0.9,
+    "Υγεία": {
+      "weight": 1.2,
       "priorityEntities": [
-        "giannis", "antetokounmpo", "olympiacos", "panathinaikos"
+        "ΕΟΠΥΥ", "ΕΟΦ", "ΕΣΥ"
+      ],
+      "keywords": [
+        "υγεία", "νοσοκομείο", "γιατρός", "ιατρός", "φάρμακο", "θεραπεία",
+        "ασθένεια", "νόσος", "συμπτώματα", "διάγνωση", "εμβόλιο",
+        "ΕΟΠΥΥ", "ΕΟΦ", "ΕΣΥ", "κλινική", "χειρουργός",
+        "καρκίνος", "διαβήτης", "καρδιά", "πίεση", "χοληστερίνη",
+        "βιταμίνη", "διατροφή", "άσκηση", "ψυχική υγεία", "κατάθλιψη",
+        "πανδημία", "κορωνοϊός", "γρίπη", "εποχική",
+        "health", "hospital", "medicine", "cancer", "diabetes",
+        "τροφές", "δίαιτα", "αδυνάτισμα", "BMI", "βάρος"
+      ],
+      "mustPassTagGroups": {
+        "health_orgs": {
+          "tags": ["ΕΟΠΥΥ", "ΕΟΦ", "ΕΣΥ"],
+          "requiredMatches": 1,
+          "mustPassScore": 90
+        },
+        "medical_conditions": {
+          "tags": ["καρκίνος", "εμβόλιο", "πανδημία", "κορωνοϊός"],
+          "requiredMatches": 2,
+          "mustPassScore": 90
+        },
+        "lifestyle_health": {
+          "tags": ["καρδιά", "πίεση", "χοληστερίνη", "βιταμίνη D", "διατροφή", "τροφές", "συμπτώματα", "δίαιτα", "αδυνάτισμα"],
+          "requiredMatches": 2,
+          "mustPassScore": 80
+        }
+      }
+    },
+    "Media": {
+      "weight": 1.1,
+      "priorityEntities": [
+        "Netflix", "TikTok", "YouTube", "Instagram"
+      ],
+      "keywords": [
+        "ΜΜΕ", "τηλεόραση", "εφημερίδα", "δημοσιογράφος", "ρεπόρτερ",
+        "Netflix", "TikTok", "YouTube", "Instagram", "Spotify", "podcast",
+        "σειρά", "ταινία", "streaming", "τηλεθέαση",
+        "social media", "influencer", "content creator",
+        "ΕΡΤ", "ΑΝΤ1", "ΣΚΑΪ", "MEGA", "STAR", "Alpha",
+        "celebrity", "celebrities", "reality", "show",
+        "διαφήμιση", "media", "press", "σειρές",
+        "εκπομπή", "τηλεοπτική εκπομπή", "παρουσιαστής"
+      ],
+      "mustPassTagGroups": {
+        "streaming_giants": {
+          "tags": ["Netflix", "TikTok", "Disney+", "Prime Video"],
+          "requiredMatches": 1,
+          "mustPassScore": 80
+        },
+        "entertainment": {
+          "tags": ["σειρές", "σειρά", "επόμενο επεισόδιο", "τηλεθέαση", "reality", "celebrities", "celebrity", "εκπομπή", "παρουσιαστής"],
+          "requiredMatches": 2,
+          "mustPassScore": 80
+        }
+      }
+    },
+    "Plus": {
+      "weight": 1.0,
+      "keywords": [
+        "ζώδια", "ωροσκόπιο", "αστρολογία", "ζώδιο",
+        "lifestyle", "tips", "viral", "trending",
+        "χρήσιμο", "συμβουλές", "ιδέες", "τρόποι",
+        "how to", "πώς να", "top 10", "best of",
+        "fun facts", "quiz", "περιέργεια", "ανακάλυψη"
+      ],
+      "mustPassTagGroups": {
+        "horoscope": {
+          "tags": ["ζώδια", "ωροσκόπιο", "αστρολογία", "ζώδιο"],
+          "requiredMatches": 1,
+          "mustPassScore": 80
+        },
+        "viral_lifestyle": {
+          "tags": ["viral", "lifestyle", "tips", "trending"],
+          "requiredMatches": 2,
+          "mustPassScore": 80
+        }
+      }
+    },
+    "Αθλητικά": {
+      "weight": 1.1,
+      "priorityEntities": [
+        "giannis", "antetokounmpo", "olympiacos", "panathinaikos",
+        "ολυμπιακός", "παναθηναϊκός", "αεκ", "παοκ", "αντετοκούνμπο"
       ],
       "keywords": [
         "olympiacos", "panathinaikos", "aek", "paok", "super league",
@@ -143,8 +272,50 @@
         "messi", "ronaldo", "mbappe", "neymar",
         "real madrid", "barcelona", "manchester", "liverpool",
         "greek basketball", "euroleague",
-        "σούπερ λίγκα", "ολυμπιακός", "παναθηναϊκός", "αεκ", "παοκ"
+        "σούπερ λίγκα", "ολυμπιακός", "παναθηναϊκός", "αεκ", "παοκ",
+        "ευρωλίγκα", "αντετοκούνμπο"
       ]
+    },
+    "Καιρός": {
+      "weight": 1.3,
+      "priorityEntities": [
+        "εμυ", "meteo", "meteo.gr",
+        "εθνικό αστεροσκοπείο",
+        "κλέαρχος μαρουσάκης", "γιάννης καλλιάνος", "θοδωρής κολυδάς",
+        "αρναούτογλου"
+      ],
+      "keywords": [
+        "καύσωνας", "θερμοκρασία", "βροχές", "βροχή", "καταιγίδα",
+        "μπόρες", "χιόνια", "χιονοπτώσεις", "παγετός",
+        "άνεμοι", "μποφόρ", "κύμα ζέστης", "κύμα ψύχους",
+        "μετεωρολογική", "εμυ", "meteo", "meteo.gr",
+        "πρόγνωση καιρού", "δελτίο καιρού", "καιρός",
+        "καιρικές συνθήκες", "θερμική εισβολή", "αφρικανική σκόνη",
+        "χαλάζι", "κεραυνοί", "κλιματική αλλαγή",
+        "μετεωρολόγος", "εθνικό αστεροσκοπείο",
+        "κλέαρχος μαρουσάκης", "γιάννης καλλιάνος", "θοδωρής κολυδάς",
+        "αρναούτογλου",
+        "weather", "heatwave", "storm", "forecast",
+        "θυελλώδεις άνεμοι", "ισχυρές βροχοπτώσεις",
+        "ψυχρή εισβολή", "αντικυκλώνας", "κυκλώνας", "κακοκαιρία"
+      ],
+      "mustPassTagGroups": {
+        "extreme_weather": {
+          "tags": ["κακοκαιρία", "καύσωνας", "χιονοθύελλα", "θύελλα"],
+          "requiredMatches": 1,
+          "mustPassScore": 90
+        },
+        "weather_experts": {
+          "tags": ["Μαρουσάκης", "Αρναούτογλου", "Καλλιάνος", "Κολυδάς"],
+          "requiredMatches": 1,
+          "mustPassScore": 90
+        },
+        "daily_weather": {
+          "tags": ["καιρός", "χιόνια", "θερμοκρασία", "βροχές", "καταιγίδα"],
+          "requiredMatches": 2,
+          "mustPassScore": 80
+        }
+      }
     }
   }
 }

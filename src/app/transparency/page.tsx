@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { canonicalUrl } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
 
 export const metadata: Metadata = {
-  title: 'Διαφάνεια | ΑΙΣΧΟΛΙΑΣΜΟΣ',
-  description:
-    'Πληροφορίες για την ιδιοκτησία, τη χρηματοδότηση, τις διορθώσεις και τη λειτουργία του ΑΙΣΧΟΛΙΑΣΜΟΣ.',
+  title: `Διαφάνεια | ${BRAND.name}`,
+  description: `Πληροφορίες για την ιδιοκτησία, τη χρηματοδότηση, τις διορθώσεις και τη λειτουργία του ${BRAND.name}.`,
   alternates: { canonical: canonicalUrl('/transparency') },
 };
 
@@ -30,14 +30,14 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Ιδιοκτησία</h2>
           <p className="text-slate-600 text-sm leading-relaxed">
-            Το ΑΙΣΧΟΛΙΑΣΜΟΣ (aisxoliasmos.gr) είναι ανεξάρτητο ψηφιακό μέσο ενημέρωσης. Δεν ανήκει σε μεγάλο media group, πολιτικό κόμμα ή εταιρεία τεχνολογίας. Η ιδιοκτησία είναι ιδιωτική.
+            Το {BRAND.name} ({new URL(BRAND.domain).hostname}) είναι ανεξάρτητο ψηφιακό μέσο ενημέρωσης. Δεν ανήκει σε μεγάλο media group, πολιτικό κόμμα ή εταιρεία τεχνολογίας. Η ιδιοκτησία είναι ιδιωτική.
           </p>
         </section>
 
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Χρηματοδότηση</h2>
           <p className="text-slate-600 text-sm leading-relaxed mb-3">
-            Το ΑΙΣΧΟΛΙΑΣΜΟΣ χρηματοδοτείται από:
+            Το {BRAND.name} χρηματοδοτείται από:
           </p>
           <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside">
             <li>Διαφημιστικά έσοδα (display ads, native advertising — σαφώς σημαίνονται)</li>
@@ -52,7 +52,7 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Πολιτική Διορθώσεων</h2>
           <p className="text-slate-600 text-sm leading-relaxed">
-            Όταν κάνουμε λάθη, τα διορθώνουμε άμεσα και διαφανώς. Κάθε διόρθωση αναφέρεται στο τέλος του άρθρου με σαφή αναφορά στο τι άλλαξε. Δεν διαγράφουμε άρθρα ή αποσπάσματα χωρίς αναφορά. Για να αναφέρετε λάθος: <a href="mailto:corrections@aisxoliasmos.gr" className="text-red-600 hover:underline">corrections@aisxoliasmos.gr</a>
+            Όταν κάνουμε λάθη, τα διορθώνουμε άμεσα και διαφανώς. Κάθε διόρθωση αναφέρεται στο τέλος του άρθρου με σαφή αναφορά στο τι άλλαξε. Δεν διαγράφουμε άρθρα ή αποσπάσματα χωρίς αναφορά. Για να αναφέρετε λάθος: <a href={`mailto:${BRAND.correctionsEmail}`} className="text-red-600 hover:underline">{BRAND.correctionsEmail}</a>
           </p>
         </section>
 
@@ -74,10 +74,10 @@ export default function TransparencyPage() {
         <section className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
           <h2 className="text-lg font-black text-slate-900 mb-3">Επικοινωνία</h2>
           <dl className="text-sm text-slate-600 space-y-2">
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Γενικά:</dt><dd><a href="mailto:info@aisxoliasmos.gr" className="text-red-600 hover:underline">info@aisxoliasmos.gr</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Σύνταξη:</dt><dd><a href="mailto:editorial@aisxoliasmos.gr" className="text-red-600 hover:underline">editorial@aisxoliasmos.gr</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Διορθώσεις:</dt><dd><a href="mailto:corrections@aisxoliasmos.gr" className="text-red-600 hover:underline">corrections@aisxoliasmos.gr</a></dd></div>
-            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Τύπος:</dt><dd><a href="mailto:press@aisxoliasmos.gr" className="text-red-600 hover:underline">press@aisxoliasmos.gr</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Γενικά:</dt><dd><a href={`mailto:${BRAND.email}`} className="text-red-600 hover:underline">{BRAND.email}</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Σύνταξη:</dt><dd><a href={`mailto:${BRAND.editorialEmail}`} className="text-red-600 hover:underline">{BRAND.editorialEmail}</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Διορθώσεις:</dt><dd><a href={`mailto:${BRAND.correctionsEmail}`} className="text-red-600 hover:underline">{BRAND.correctionsEmail}</a></dd></div>
+            <div className="flex gap-2"><dt className="font-medium text-slate-800 shrink-0">Τύπος:</dt><dd><a href={`mailto:${BRAND.pressEmail}`} className="text-red-600 hover:underline">{BRAND.pressEmail}</a></dd></div>
           </dl>
         </section>
       </div>

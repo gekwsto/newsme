@@ -26,11 +26,11 @@ async function main() {
   const passwordHash = await bcrypt.hash(rawPassword, 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@aisxoliasmos.gr' },
+    where: { email: 'admin@newsme.gr' },
     update: { passwordHash },
     create: {
       name: 'Admin',
-      email: 'admin@aisxoliasmos.gr',
+      email: 'admin@newsme.gr',
       passwordHash,
       role: 'ADMIN',
     },
@@ -41,6 +41,7 @@ async function main() {
   // ─── Categories ──────────────────────────────────────────────────────────────
 
   const categoryData = [
+    // ── Internal categories (used by AI/RSS pipeline — do not remove) ──
     { name: 'AI', slug: 'ai', color: '#7c3aed' },
     { name: 'Τεχνολογία', slug: 'texnologia', color: '#2563eb' },
     { name: 'Οικονομία', slug: 'oikonomia', color: '#059669' },
@@ -50,6 +51,11 @@ async function main() {
     { name: 'Viral', slug: 'viral', color: '#db2777' },
     { name: 'Απόψεις', slug: 'apopseis', color: '#475569' },
     { name: 'Αθλητικά', slug: 'athlitika', color: '#16a34a' },
+    { name: 'Καιρός', slug: 'kairos', color: '#0ea5e9' },
+    // ── Display-only categories (frontend navigation — phase 2 will add pipeline support) ──
+    { name: 'Υγεία', slug: 'ygeia', color: '#16a34a' },
+    { name: 'Media', slug: 'media', color: '#db2777' },
+    { name: 'Plus', slug: 'plus', color: '#7c3aed' },
   ];
 
   for (const cat of categoryData) {

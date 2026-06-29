@@ -5,10 +5,31 @@ const CONFIG_PATH = path.join(process.cwd(), 'config/semantic-matrix.json');
 
 // ─── Config types ──────────────────────────────────────────────────────────────
 
+export interface MustPassTagGroup {
+  /** Tags to match against title+excerpt (whole-word, accent-insensitive). */
+  tags: string[];
+  /** How many tags must match to trigger this group. Use 1 for precise terms, 2+ for generic. */
+  requiredMatches: number;
+  /**
+   * Guaranteed minimum semantic score when triggered.
+   * Must be high enough to clear the compound threshold:
+   *   compound = local×0.4 + semantic×0.6 ≥ 45
+   *   → semantic ≥ 42 when local=40 (filter floor).
+   * Use 80 (generic groups) or 90 (exact agency/term groups) as safe defaults.
+   */
+  mustPassScore: number;
+}
+
 export interface SemanticCategoryConfig {
   weight: number;
   keywords: string[];
   priorityEntities?: string[];
+  /**
+   * Groups of high-value tags that, when matched, FORCE the article through the semantic
+   * filter and guarantee a minimum score — regardless of keyword scoring.
+   * The article is assigned to THIS category if it scores highest.
+   */
+  mustPassTagGroups?: Record<string, MustPassTagGroup>;
 }
 
 export interface SemanticMatrixConfig {
@@ -53,6 +74,31 @@ export interface SemanticFilterInput {
   reliabilityScore?: number;
 }
 
+export interface KeywordContribution {
+  keyword: string;
+  location: 'title' | 'excerpt' | 'combined';
+  isPriority: boolean;
+  score: number;
+}
+
+export interface MustPassTrigger {
+  groupName: string;
+  matchedTags: string[];
+  mustPassScore: number;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  contributions: KeywordContribution[];
+  keywordsSubtotal: number;
+  multiKeywordBonus: number;
+  reliabilityMultiplier: number;
+  weightMultiplier: number;
+  finalScore: number;
+  /** Set when a mustPassTagGroup was responsible for the minimum score floor. */
+  mustPassGroup?: MustPassTrigger;
+}
+
 export interface SemanticFilterResult {
   id: string;
   semanticScore: number;
@@ -61,26 +107,33 @@ export interface SemanticFilterResult {
   secondaryCategory: string | null;
   passedSemanticFilter: boolean;
   filteredReason: string | null;
+  breakdown: CategoryBreakdown[];
+  /**
+   * Set when the winning category passed via a mustPassTagGroup rather than keyword score alone.
+   * Includes category name, group name, and the specific tags that triggered.
+   */
+  mustPassGroupTriggered: ({ category: string } & MustPassTrigger) | null;
 }
 
 // ─── Normalizer ────────────────────────────────────────────────────────────────
 
 function normalize(text: string): string {
   return text
-    .normalize('NFD')                    // decompose accented chars
-    .replace(/[̀-ͯ]/g, '')     // strip diacritic marks (covers ά→α, etc.)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')  // strip diacritic marks (ά→α etc.)
     .toLowerCase()
-    .replace(/[^a-zα-ω0-9\s\-]/g, ' ') // keep letters, digits, hyphens
+    .replace(/[^a-zα-ω0-9\s\-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 // ─── Core scorer ──────────────────────────────────────────────────────────────
 
-interface CategoryScore {
+interface CategoryScoreDetail {
   category: string;
   score: number;
   matchedKeywords: string[];
+  breakdown: CategoryBreakdown;
 }
 
 export function computeSemanticScore(
@@ -90,55 +143,102 @@ export function computeSemanticScore(
   const titleNorm = normalize(input.title);
   const excerptNorm = normalize(input.excerpt ?? '');
   const combined = `${titleNorm} ${excerptNorm}`.trim();
+  // Padded version for whole-word mustPass matching (prevents "κοκ" matching "κόκκινο")
+  const paddedCombined = ` ${combined} `;
 
-  const categoryScores: CategoryScore[] = [];
+  const categoryScores: CategoryScoreDetail[] = [];
 
   for (const [catName, catConfig] of Object.entries(config.categories)) {
     let score = 0;
     const matched: string[] = [];
+    const contributions: KeywordContribution[] = [];
+    const seenNorm = new Set<string>();
     const prioritySet = new Set(
       (catConfig.priorityEntities ?? []).map((e) => normalize(e))
     );
 
+    // ── Regular keyword scoring ────────────────────────────────────────────────
     for (const kw of catConfig.keywords) {
       const kwNorm = normalize(kw);
       if (!kwNorm) continue;
+      if (seenNorm.has(kwNorm)) continue;
+      seenNorm.add(kwNorm);
 
       const isPriority = prioritySet.has(kwNorm);
       const inTitle = titleNorm.includes(kwNorm);
       const inExcerpt = !inTitle && excerptNorm.includes(kwNorm);
+      const inCombined = !inTitle && !inExcerpt && combined.includes(kwNorm);
 
       if (inTitle) {
-        score += isPriority ? 30 : 30; // title match always +30
-        if (isPriority) score += 25;   // priority entity bonus
+        const kwScore = 30 + (isPriority ? 25 : 0);
+        score += kwScore;
         matched.push(kw);
+        contributions.push({ keyword: kw, location: 'title', isPriority, score: kwScore });
       } else if (inExcerpt) {
-        score += 15;                   // excerpt match +15
-        if (isPriority) score += 25;   // priority entity bonus
+        const kwScore = 15 + (isPriority ? 25 : 0);
+        score += kwScore;
         matched.push(kw);
-      } else if (combined.includes(kwNorm)) {
-        // Partial / combined match (possible overlap of title+excerpt join)
+        contributions.push({ keyword: kw, location: 'excerpt', isPriority, score: kwScore });
+      } else if (inCombined) {
         score += 8;
         matched.push(kw);
+        contributions.push({ keyword: kw, location: 'combined', isPriority, score: 8 });
       }
     }
 
-    if (matched.length === 0) continue;
+    // ── mustPassTagGroups: whole-word, accent-insensitive matching ─────────────
+    // Uses padded combined to avoid substring false positives (e.g. "κοκ" ≠ "κόκκινο").
+    let mustPassForCat: MustPassTrigger | null = null;
 
-    // Multi-keyword bonus (+10 per additional keyword, capped at +30)
-    if (matched.length >= 2) {
-      score += Math.min((matched.length - 1) * 10, 30);
+    for (const [groupName, group] of Object.entries(catConfig.mustPassTagGroups ?? {})) {
+      const matchedTags: string[] = [];
+      for (const tag of group.tags) {
+        const tagNorm = normalize(tag);
+        if (tagNorm && paddedCombined.includes(` ${tagNorm} `)) {
+          matchedTags.push(tag);
+        }
+      }
+      if (matchedTags.length >= group.requiredMatches) {
+        // If multiple groups trigger, keep the one with highest mustPassScore
+        if (!mustPassForCat || group.mustPassScore > mustPassForCat.mustPassScore) {
+          mustPassForCat = { groupName, matchedTags, mustPassScore: group.mustPassScore };
+        }
+      }
     }
 
-    // Source reliability multiplier (slight boost for trusted sources)
-    if ((input.reliabilityScore ?? 0) >= 90) {
-      score = Math.round(score * 1.1);
+    // Skip category if neither keywords nor mustPass contributed anything
+    if (matched.length === 0 && !mustPassForCat) continue;
+
+    const keywordsSubtotal = score;
+    const multiKeywordBonus = matched.length >= 2 ? Math.min((matched.length - 1) * 10, 30) : 0;
+    score += multiKeywordBonus;
+
+    const reliabilityMultiplier = (input.reliabilityScore ?? 0) >= 90 ? 1.1 : 1.0;
+    if (reliabilityMultiplier > 1.0) score = Math.round(score * reliabilityMultiplier);
+
+    const weightMultiplier = catConfig.weight;
+    score = Math.round(score * weightMultiplier);
+
+    // mustPass guarantees a minimum score floor (applied after weight multiplier)
+    if (mustPassForCat && score < mustPassForCat.mustPassScore) {
+      score = mustPassForCat.mustPassScore;
     }
 
-    // Category weight multiplier
-    score = Math.round(score * catConfig.weight);
-
-    categoryScores.push({ category: catName, score, matchedKeywords: matched });
+    categoryScores.push({
+      category: catName,
+      score,
+      matchedKeywords: matched,
+      breakdown: {
+        category: catName,
+        contributions,
+        keywordsSubtotal,
+        multiKeywordBonus,
+        reliabilityMultiplier,
+        weightMultiplier,
+        finalScore: score,
+        ...(mustPassForCat && { mustPassGroup: mustPassForCat }),
+      },
+    });
   }
 
   // Sort by score desc
@@ -148,14 +248,35 @@ export function computeSemanticScore(
   const second = categoryScores[1] ?? null;
   const semanticScore = best?.score ?? 0;
 
-  // Collect all matched keywords (deduplicated, max 10)
   const allMatched = [...new Set(categoryScores.flatMap((c) => c.matchedKeywords))].slice(0, 10);
+
+  // mustPass from the winning category
+  const bestMustPass = best?.breakdown.mustPassGroup ?? null;
+  const mustPassGroupTriggered = bestMustPass
+    ? { category: best!.category, ...bestMustPass }
+    : null;
 
   // Pass conditions
   const passedByScore = semanticScore >= config.thresholds.minSemanticScore;
   const passedByReliability =
     (input.reliabilityScore ?? 0) >= config.thresholds.alwaysKeepIfSourceReliabilityAbove;
-  const passedSemanticFilter = passedByScore || passedByReliability;
+  // Explicit override: mustPass on the winning category bypasses the threshold check.
+  // In practice mustPassScore (80-90) >> minSemanticScore (35), so passedByScore would
+  // already be true — but this remains correct if the threshold is ever raised.
+  const passedByMustPass = bestMustPass !== null;
+  const passedSemanticFilter = passedByScore || passedByReliability || passedByMustPass;
+
+  // Log every mustPass trigger so it shows in pipeline logs
+  if (passedByMustPass) {
+    console.log('[semantic] must_pass_triggered', {
+      title: input.title.slice(0, 80),
+      category: best!.category,
+      group: bestMustPass!.groupName,
+      matchedTags: bestMustPass!.matchedTags,
+      finalScore: semanticScore,
+      bypassedThreshold: !passedByScore,
+    });
+  }
 
   let filteredReason: string | null = null;
   if (!passedSemanticFilter) {
@@ -173,6 +294,8 @@ export function computeSemanticScore(
     secondaryCategory: second?.category ?? null,
     passedSemanticFilter,
     filteredReason,
+    breakdown: categoryScores.map((c) => c.breakdown),
+    mustPassGroupTriggered,
   };
 }
 

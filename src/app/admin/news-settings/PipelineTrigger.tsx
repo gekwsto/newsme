@@ -70,7 +70,7 @@ export default function PipelineTrigger() {
               </p>
               {result.scoreStats && (
                 <p className="text-xs opacity-75">
-                  AI scores — min: {result.scoreStats.min} · max: {result.scoreStats.max} · avg: {result.scoreStats.average} · threshold: {result.scoreStats.threshold}
+                  Compound scores — min: {result.scoreStats.min} · max: {result.scoreStats.max} · avg: {result.scoreStats.average} · threshold: {result.scoreStats.threshold}
                 </p>
               )}
             </>

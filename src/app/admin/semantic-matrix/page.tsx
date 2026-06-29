@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -11,7 +12,7 @@ import { SEMANTIC_TOKENS_SAVED } from '@/lib/semantic-filter';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Semantic Matrix | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Semantic Matrix | Admin ${BRAND.name}`,
 };
 
 async function fetchStats() {

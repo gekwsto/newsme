@@ -125,6 +125,7 @@ export async function importFromPexels(params: ImportFromPexelsParams): Promise<
           categoryId,
           tagId: tagId || null,
           pexelsId: photo.id,
+          uploadSource: 'pexels',
           localPath: absPath,
           publicUrl,
           originalUrl: downloadUrl,

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Share2, Link2, Check } from 'lucide-react';
 import { XIcon, FacebookIcon, LinkedinIcon } from '@/components/ui/SocialIcons';
+import { BRAND } from '@/config/brand';
 
 interface ShareButtonsProps {
   title: string;
@@ -11,7 +12,7 @@ interface ShareButtonsProps {
 
 export default function ShareButtons({ title, slug }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `https://aisxoliasmos.gr/article/${slug}`;
+  const shareUrl = `${BRAND.domain}/article/${slug}`;
 
   const handleCopy = async () => {
     await navigator.clipboard?.writeText(shareUrl);

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -9,7 +10,7 @@ import { QueueItemStatus, ArticleStatus, SocialPostStatus } from '@/generated/pr
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Publishing Queue | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Publishing Queue | Admin ${BRAND.name}`,
 };
 
 export default async function PublishingQueuePage() {

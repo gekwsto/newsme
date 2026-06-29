@@ -17,6 +17,11 @@ export interface TrainingCaptureInput {
   generatedExcerpt: string;
   generatedTags: string[];
   category?: string;
+  promptVersion?: string;
+  generatorVersion?: string;
+  matchedKeywords?: string[];
+  semanticCategory?: string;
+  compoundScore?: number;
 }
 
 export async function captureTrainingExample(input: TrainingCaptureInput): Promise<void> {
@@ -38,6 +43,11 @@ export async function captureTrainingExample(input: TrainingCaptureInput): Promi
         generatedExcerpt: input.generatedExcerpt,
         generatedTags: input.generatedTags,
         category: input.category ?? null,
+        promptVersion: input.promptVersion ?? null,
+        generatorVersion: input.generatorVersion ?? null,
+        matchedKeywords: input.matchedKeywords ?? [],
+        semanticCategory: input.semanticCategory ?? null,
+        compoundScore: input.compoundScore ?? null,
       },
     });
   } catch (err) {

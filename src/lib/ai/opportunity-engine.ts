@@ -51,7 +51,7 @@ export async function generateEvergreenOpportunities(
 ): Promise<GeneratedOpportunity[]> {
   const client = getClient();
 
-  const systemPrompt = `Είσαι SEO content strategist και editorial AI για το ελληνικό portal ΑΙΣΧΟΛΙΑΣΜΟΣ.
+  const systemPrompt = `Είσαι SEO content strategist και editorial AI για το ελληνικό portal NewsMe.
 
 Η αποστολή σου: να εντοπίζεις ΑΝΑΞΙΟΠΟΙΗΤΕΣ ευκαιρίες για evergreen περιεχόμενο που θα φέρει organic traffic για χρόνια.
 
@@ -118,7 +118,7 @@ overallScore: round(seoScore*0.30 + evergreenValue*0.30 + businessValue*0.20 + f
   ]
 }`;
 
-  const userPrompt = `Πρότεινε ${count} evergreen ευκαιρίες περιεχομένου για ΑΙΣΧΟΛΙΑΣΜΟΣ.
+  const userPrompt = `Πρότεινε ${count} evergreen ευκαιρίες περιεχομένου για NewsMe.
 
 Προτεραίωσε:
 1. Θέματα που δεν έχουμε γράψει ακόμα

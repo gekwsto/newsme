@@ -6,7 +6,9 @@ import { Clock } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT } from '@/lib/article-mapper';
 import { addHeadingIds, extractHeadings } from '@/lib/toc';
-import { SITE_URL, articleCanonical, newsArticleJsonLd, breadcrumbJsonLd, organizationJsonLd, faqPageJsonLd } from '@/lib/seo';
+import { SITE_URL, articleCanonical, newsArticleJsonLd, breadcrumbJsonLd, faqPageJsonLd, stripHtmlToText, DEFAULT_OG_IMAGE, SITE_NAME, SITE_TWITTER } from '@/lib/seo';
+import { BRAND } from '@/config/brand';
+import { getDisplayCategory } from '@/config/categories';
 import CategoryBadge from '@/components/ui/CategoryBadge';
 import ShareButtons from '@/components/ui/ShareButtons';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
@@ -40,6 +42,7 @@ export async function generateMetadata({
       seoTitle: true,
       seoDescription: true,
       generatedImageUrl: true,
+      coverImage: true,
       publishedAt: true,
       updatedAt: true,
       status: true,
@@ -51,11 +54,12 @@ export async function generateMetadata({
   });
   if (!raw || raw.status !== 'PUBLISHED') return { title: 'Άρθρο δεν βρέθηκε' };
 
-  const title = raw.seoTitle || `${raw.title} | ΑΙΣΧΟΛΙΑΣΜΟΣ`;
+  const title = raw.seoTitle || `${raw.title} | ${SITE_NAME}`;
   const description = raw.seoDescription || raw.excerpt || '';
   const canonical = articleCanonical(slug);
   const tags = raw.tags.map((t) => t.tag.name);
   const publishedTime = (raw.publishedAt ?? raw.updatedAt).toISOString();
+  const ogImage = raw.generatedImageUrl ?? raw.coverImage ?? DEFAULT_OG_IMAGE;
 
   return {
     title,
@@ -69,30 +73,22 @@ export async function generateMetadata({
       description,
       url: canonical,
       type: 'article',
-      siteName: 'ΑΙΣΧΟΛΙΑΣΜΟΣ',
+      siteName: SITE_NAME,
       locale: 'el_GR',
       publishedTime,
       modifiedTime: raw.updatedAt.toISOString(),
       authors: [raw.author.name],
       section: raw.category.name,
       tags,
-      ...(raw.generatedImageUrl
-        ? { images: [{ url: raw.generatedImageUrl, width: 1200, height: 630, alt: raw.title }] }
-        : {}),
+      images: [{ url: ogImage, width: 1200, height: 630, alt: raw.title }],
     },
     twitter: {
       card: 'summary_large_image',
-      site: '@aisxoliasmos',
-      creator: '@aisxoliasmos',
+      site: SITE_TWITTER,
+      creator: SITE_TWITTER,
       title: raw.title,
       description,
-      ...(raw.generatedImageUrl ? { images: [raw.generatedImageUrl] } : {}),
-    },
-    other: {
-      'article:published_time': publishedTime,
-      'article:modified_time': raw.updatedAt.toISOString(),
-      'article:section': raw.category.name,
-      'article:tag': tags.join(','),
+      images: [ogImage],
     },
   };
 }
@@ -132,6 +128,9 @@ export default async function ArticlePage({
   const related = relatedRaw.map(mapPrismaArticle);
   const trending = trendingRaw.map(mapPrismaArticle);
 
+  const displayCat = getDisplayCategory(article.category.slug) ?? article.category;
+  const articleBody = stripHtmlToText(article.content, 20_000) || article.excerpt;
+
   const articleJsonLd = newsArticleJsonLd({
     title: article.title,
     excerpt: article.excerpt,
@@ -139,19 +138,18 @@ export default async function ArticlePage({
     publishedAt: article.publishedAt,
     updatedAt: raw.updatedAt.toISOString(),
     author: article.author.name,
-    category: article.category.name,
+    category: displayCat.name,
     tags: article.tags,
-    imageUrl: article.imageUrl,
+    imageUrl: article.imageUrl ?? undefined,
     articleType: raw.articleType ?? 'NEWS',
+    articleBody,
   });
 
   const breadcrumbLd = breadcrumbJsonLd([
     { name: 'Αρχική', url: SITE_URL },
-    { name: article.category.name, url: `${SITE_URL}/category/${article.category.slug}` },
+    { name: displayCat.name, url: `${SITE_URL}/category/${displayCat.slug}` },
     { name: article.title, url: articleCanonical(slug) },
   ]);
-
-  const orgLd = organizationJsonLd();
 
   const faqItems =
     Array.isArray(raw.faqJson)
@@ -166,14 +164,13 @@ export default async function ArticlePage({
       <ViewTracker slug={slug} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }} />
       {faqLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <Breadcrumbs
             crumbs={[
-              { label: article.category.name, href: `/category/${article.category.slug}` },
+              { label: displayCat.name, href: `/category/${displayCat.slug}` },
               { label: article.title },
             ]}
           />
@@ -251,7 +248,7 @@ export default async function ArticlePage({
               </div>
               <div>
                 <p className="font-bold text-slate-900 dark:text-slate-100">{article.author.name}</p>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed">Συντάκτης στο ΑΙΣΧΟΛΙΑΣΜΟΣ</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed">{`Συντάκτης στο ${BRAND.name}`}</p>
               </div>
             </div>
 

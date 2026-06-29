@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import { redirect } from 'next/navigation';
 import { Settings } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -13,7 +14,7 @@ import EvergreenPipelineTrigger from './EvergreenPipelineTrigger';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'News Automation | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `News Automation | Admin ${BRAND.name}`,
 };
 
 export default async function NewsSettingsPage() {

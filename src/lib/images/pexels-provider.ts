@@ -20,6 +20,7 @@ const CACHE_TTL_MS = 30 * 60 * 1000;
 // ─── Category → English search keyword map ───────────────────────────────────
 
 const CATEGORY_KEYWORDS: Record<string, string> = {
+  // Internal categories (used by pipeline)
   'AI':                     'artificial intelligence technology',
   'Τεχνολογία':             'technology digital innovation',
   'Οικονομία':              'economy finance markets',
@@ -28,6 +29,12 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
   'Κόσμος':                 'world news global',
   'Viral':                  'social media trending',
   'Απόψεις':                'newspaper editorial media',
+  'Αθλητικά':              'sports athletics stadium',
+  'Καιρός':                 'weather sky nature',
+  // Display categories (frontend navigation)
+  'Υγεία':                  'healthcare medical hospital',
+  'Media':                  'journalism newspaper broadcast',
+  'Plus':                   'technology social media digital',
 };
 
 // ─── Smart query builder ──────────────────────────────────────────────────────

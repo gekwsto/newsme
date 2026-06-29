@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { fetchFeed } from '@/lib/rss/fetcher';
-import { generateArticleContent } from '@/lib/ai/content-generator';
+import { generateArticleContent, PROMPT_VERSION, GENERATOR_VERSION } from '@/lib/ai/content-generator';
 import { scoreArticles } from '@/lib/ai/content-scorer';
 import { clusterArticles, calcTrendScore } from '@/lib/ai/trend-clusterer';
 import { getEditorialConfig } from '@/lib/editorial-config';
@@ -21,18 +21,6 @@ async function requireAuth() {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Δεν είσαι συνδεδεμένος');
   return session.user;
-}
-
-async function resolveSuggestedCategory(
-  suggestedCategory: string | undefined,
-  fallbackId: string
-): Promise<string> {
-  if (!suggestedCategory) return fallbackId;
-  const cat = await prisma.category.findFirst({
-    where: { name: suggestedCategory },
-    select: { id: true },
-  });
-  return cat?.id ?? fallbackId;
 }
 
 function estimateReadTime(html: string): number {
@@ -520,7 +508,7 @@ export async function generateDraftFromDiscoveredArticle(
     });
 
     const slug = await uniqueSlug(generated.slug || 'article');
-    const categoryId = await resolveSuggestedCategory(generated.suggestedCategory, discovered.categoryId);
+    const categoryId = discovered.categoryId;
 
     const hasRssImage = Boolean(discovered.imageUrl);
     const article = await prisma.article.create({
@@ -547,8 +535,10 @@ export async function generateDraftFromDiscoveredArticle(
         articleId: article.id,
         prompt: topic,
         rawOutput: JSON.stringify(generated),
-        model: 'gpt-4o',
+        model: 'gpt-5-mini',
         imagePrompt: generated.imagePrompt || null,
+        promptVersion: PROMPT_VERSION,
+        generatorVersion: GENERATOR_VERSION,
       },
     });
 
@@ -567,7 +557,9 @@ export async function generateDraftFromDiscoveredArticle(
       generatedTitle: generated.title,
       generatedExcerpt: generated.excerpt,
       generatedTags: generated.tags,
-      category: generated.suggestedCategory,
+      category: discovered.category.name,
+      promptVersion: PROMPT_VERSION,
+      generatorVersion: GENERATOR_VERSION,
     });
 
     if (generated.facebookPost) {
@@ -623,7 +615,7 @@ export async function generateDraftFromDiscoveredArticle(
         if (cat) {
           const img = await selectFeaturedImage({
             categorySlug: cat.slug,
-            tags: generated.tags,
+            matchedKeywords: Array.isArray(discovered.matchedKeywords) ? (discovered.matchedKeywords as string[]) : [],
             articleTitle: generated.title,
             articleId: article.id,
           });
@@ -635,8 +627,8 @@ export async function generateDraftFromDiscoveredArticle(
                 generatedImageUrl: img.publicUrl,
                 imageStatus: ImageStatus.GENERATED,
                 imageSource: 'LIBRARY',
-                imageProvider: 'Pexels',
-                imageAttribution: `${img.photographer} via Pexels`,
+                imageProvider: 'Library',
+                imageAttribution: img.photographer ? `${img.photographer} via Pexels` : null,
               },
             });
           } else {

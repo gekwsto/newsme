@@ -195,7 +195,7 @@ ${internalLinksSection}
 ━━━ SEO TITLE: CTR-OPTIMIZED (max 60 χαρακτήρες — χωρίς brand) ━━━
 
 ΟΧΙ: "Τι είναι [keyword]" (too generic, low CTR)
-ΟΧΙ: "[keyword] | ΑΙΣΧΟΛΙΑΣΜΟΣ" (brand προστίθεται αυτόματα)
+ΟΧΙ: "[keyword] | NewsMe" (brand προστίθεται αυτόματα)
 ΝΑΙ (διάλεξε το καλύτερο για το θέμα):
   • "[Primary Keyword]: Πλήρης Οδηγός 2025"
   • "Τι είναι [Keyword] και Πώς Λειτουργεί — Εξήγηση"

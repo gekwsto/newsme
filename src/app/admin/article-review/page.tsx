@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { BRAND } from '@/config/brand';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -11,7 +12,7 @@ import ReviewActions from './ReviewActions';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Article Review | Admin ΑΙΣΧΟΛΙΑΣΜΟΣ',
+  title: `Article Review | Admin ${BRAND.name}`,
 };
 
 type Filter = 'pending' | 'accepted' | 'rejected' | 'all';
