@@ -7,14 +7,14 @@ export default async function TrendingSidebar() {
   const [recentArticles, trendClusters, categories] = await Promise.all([
     prisma.article.findMany({
       where: { status: 'PUBLISHED' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       take: 5,
       select: {
         id: true,
         slug: true,
         title: true,
         generatedImageUrl: true,
-        createdAt: true,
+        publishedAt: true,
         category: { select: { name: true, slug: true, color: true } },
       },
     }),

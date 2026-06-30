@@ -13,11 +13,10 @@ import CategoryBadge from '@/components/ui/CategoryBadge';
 import ShareButtons from '@/components/ui/ShareButtons';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import TableOfContents from '@/components/ui/TableOfContents';
-import AICommentaryBox from '@/components/ui/AICommentaryBox';
 import ArticleCTA from '@/components/sections/ArticleCTA';
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatRelativeDate } from '@/lib/utils';
 import ViewTracker from '@/components/ui/ViewTracker';
 
 export async function generateStaticParams() {
@@ -203,7 +202,7 @@ export default async function ArticlePage({
               <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-sm">
                 <span className="flex items-center gap-1">
                   <Clock size={14} />
-                  {article.readTime} λεπτά ανάγνωσης
+                  {formatRelativeDate(article.publishedAt)}
                 </span>
               </div>
             </div>
@@ -223,9 +222,6 @@ export default async function ArticlePage({
 
             <div className="article-content" dangerouslySetInnerHTML={{ __html: contentWithIds }} />
 
-            {article.aiCommentary && (
-              <AICommentaryBox commentary={article.aiCommentary} articleTitle={article.title} />
-            )}
 
             {article.tags.length > 0 && (
               <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">

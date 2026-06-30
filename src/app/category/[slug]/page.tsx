@@ -7,6 +7,8 @@ import { isDisplayCategory, DISPLAY_CATEGORY_MAP, DISPLAY_CATEGORIES } from '@/c
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
 
+export const revalidate = 300;
+
 export async function generateStaticParams() {
   const categories = await prisma.category.findMany({ select: { slug: true } });
   return categories.map((c) => ({ slug: c.slug }));
@@ -64,7 +66,7 @@ export default async function CategoryPage({
     }),
     prisma.article.findMany({
       where: { status: 'PUBLISHED', category: { slug: { in: articleSlugsToQuery } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       take: 50,
       select: ARTICLE_PUBLIC_SELECT,
     }),

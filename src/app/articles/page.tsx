@@ -6,6 +6,8 @@ import TrendingSidebar from '@/components/ui/TrendingSidebar';
 import { BRAND } from '@/config/brand';
 import { DISPLAY_CATEGORIES } from '@/config/categories';
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: `Όλα τα Άρθρα | ${BRAND.name}`,
   description: `Εξερεύνησε όλα τα άρθρα του ${BRAND.name} — AI, Τεχνολογία, Οικονομία και πολλά άλλα.`,
@@ -15,7 +17,7 @@ export default async function ArticlesPage() {
   const [rawArticles, categories] = await Promise.all([
     prisma.article.findMany({
       where: { status: 'PUBLISHED' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       take: 50,
       select: ARTICLE_PUBLIC_SELECT,
     }),

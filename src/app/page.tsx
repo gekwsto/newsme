@@ -14,6 +14,8 @@ import TrendingSidebar from '@/components/ui/TrendingSidebar';
 import NewsletterSection from '@/components/sections/NewsletterSection';
 import DiscussionTopics from '@/components/sections/DiscussionTopics';
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: `${BRAND.name} — ${BRAND.tagline}`,
   description: BRAND.description,
@@ -30,7 +32,7 @@ export default async function HomePage() {
   const [rawArticles, categories] = await Promise.all([
     prisma.article.findMany({
       where: { status: 'PUBLISHED' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { publishedAt: 'desc' },
       take: 20,
       select: ARTICLE_PUBLIC_SELECT,
     }),

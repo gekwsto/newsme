@@ -9,13 +9,18 @@ const SITEMAPS = [
   'sitemap-topics.xml',
   'sitemap-articles.xml',
   'sitemap-evergreen.xml',
-  'news-sitemap.xml',
 ];
 
 export function GET() {
-  const entries = SITEMAPS.map(
+  const newsLastmod = new Date().toISOString();
+
+  const staticEntries = SITEMAPS.map(
     (s) => `  <sitemap>\n    <loc>${SITE_URL}/${s}</loc>\n  </sitemap>`,
-  ).join('\n');
+  );
+
+  const newsEntry = `  <sitemap>\n    <loc>${SITE_URL}/news-sitemap.xml</loc>\n    <lastmod>${newsLastmod}</lastmod>\n  </sitemap>`;
+
+  const entries = [...staticEntries, newsEntry].join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
