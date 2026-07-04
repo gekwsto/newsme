@@ -39,37 +39,79 @@ export default async function EditAuthorPage({
           <form
             action={async (fd: FormData) => {
               'use server';
+              const str = (key: string) => (fd.get(key) as string)?.trim() || null;
               await updateAuthor(id, {
                 name: fd.get('name') as string,
                 slug: fd.get('slug') as string,
-                title: (fd.get('title') as string) || null,
-                bio: (fd.get('bio') as string) || null,
-                avatarUrl: (fd.get('avatarUrl') as string) || null,
+                title: str('title'),
+                bio: str('bio'),
+                avatarUrl: str('avatarUrl'),
+                twitterUrl: str('twitterUrl'),
+                facebookUrl: str('facebookUrl'),
+                instagramUrl: str('instagramUrl'),
+                linkedinUrl: str('linkedinUrl'),
+                youtubeUrl: str('youtubeUrl'),
+                tiktokUrl: str('tiktokUrl'),
               });
               redirect('/admin/authors');
             }}
             className="space-y-4"
           >
-            <div>
-              <label className={labelClass}>Όνομα *</label>
-              <input name="name" required defaultValue={author.name} className={inputClass} />
+            {/* Basic info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Όνομα *</label>
+                <input name="name" required defaultValue={author.name} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Slug *</label>
+                <input name="slug" required defaultValue={author.slug} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Τίτλος / Ρόλος</label>
+                <input name="title" defaultValue={author.title ?? ''} className={inputClass} placeholder="Συντακτική Ομάδα" />
+              </div>
+              <div>
+                <label className={labelClass}>Avatar URL</label>
+                <input name="avatarUrl" defaultValue={author.avatarUrl ?? ''} className={inputClass} placeholder="https://..." />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Bio</label>
+                <textarea name="bio" rows={3} defaultValue={author.bio ?? ''} className={`${inputClass} resize-none`} placeholder="Σύντομη περιγραφή..." />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Slug *</label>
-              <input name="slug" required defaultValue={author.slug} className={inputClass} />
+
+            {/* Social media */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4">Social Media</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Twitter / X URL</label>
+                  <input name="twitterUrl" defaultValue={author.twitterUrl ?? ''} className={inputClass} placeholder="https://x.com/username" />
+                </div>
+                <div>
+                  <label className={labelClass}>Facebook URL</label>
+                  <input name="facebookUrl" defaultValue={author.facebookUrl ?? ''} className={inputClass} placeholder="https://facebook.com/username" />
+                </div>
+                <div>
+                  <label className={labelClass}>Instagram URL</label>
+                  <input name="instagramUrl" defaultValue={author.instagramUrl ?? ''} className={inputClass} placeholder="https://instagram.com/username" />
+                </div>
+                <div>
+                  <label className={labelClass}>LinkedIn URL</label>
+                  <input name="linkedinUrl" defaultValue={author.linkedinUrl ?? ''} className={inputClass} placeholder="https://linkedin.com/in/username" />
+                </div>
+                <div>
+                  <label className={labelClass}>YouTube URL</label>
+                  <input name="youtubeUrl" defaultValue={author.youtubeUrl ?? ''} className={inputClass} placeholder="https://youtube.com/@channel" />
+                </div>
+                <div>
+                  <label className={labelClass}>TikTok URL</label>
+                  <input name="tiktokUrl" defaultValue={author.tiktokUrl ?? ''} className={inputClass} placeholder="https://tiktok.com/@username" />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Τίτλος / Ρόλος</label>
-              <input name="title" defaultValue={author.title ?? ''} className={inputClass} placeholder="Συντακτική Ομάδα" />
-            </div>
-            <div>
-              <label className={labelClass}>Avatar URL</label>
-              <input name="avatarUrl" defaultValue={author.avatarUrl ?? ''} className={inputClass} placeholder="https://..." />
-            </div>
-            <div>
-              <label className={labelClass}>Bio</label>
-              <textarea name="bio" rows={4} defaultValue={author.bio ?? ''} className={`${inputClass} resize-none`} placeholder="Σύντομη περιγραφή..." />
-            </div>
+
             <div className="flex gap-3 justify-end pt-2">
               <a href="/admin/authors" className="text-sm text-slate-500 hover:text-slate-700 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 transition-colors">
                 Ακύρωση

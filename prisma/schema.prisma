@@ -215,17 +215,23 @@ model ArticleTag {
 }
 
 model Author {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  bio       String?   @db.Text
-  avatarUrl String?
-  title     String?
-  isActive  Boolean   @default(true)
-  isDefault Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  articles  Article[]
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  bio          String?   @db.Text
+  avatarUrl    String?
+  title        String?
+  twitterUrl   String?
+  facebookUrl  String?
+  instagramUrl String?
+  linkedinUrl  String?
+  youtubeUrl   String?
+  tiktokUrl    String?
+  isActive     Boolean   @default(true)
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  articles     Article[]
 
   @@map("authors")
 }

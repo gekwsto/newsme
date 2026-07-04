@@ -49,6 +49,12 @@ export async function updateAuthor(
     bio?: string | null;
     avatarUrl?: string | null;
     title?: string | null;
+    twitterUrl?: string | null;
+    facebookUrl?: string | null;
+    instagramUrl?: string | null;
+    linkedinUrl?: string | null;
+    youtubeUrl?: string | null;
+    tiktokUrl?: string | null;
     isActive?: boolean;
     isDefault?: boolean;
   },
