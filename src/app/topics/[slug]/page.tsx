@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { CLUSTERS, getClusterBySlug } from '@/services/evergreen-clusters';
 import { SITE_URL, SITE_NAME, SITE_TWITTER, DEFAULT_OG_IMAGE } from '@/lib/seo';
 import { BRAND } from '@/config/brand';
+const ORG_REF = { '@id': `${BRAND.domain}/#organization` } as const;
 import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
 import { formatRelativeDate } from '@/lib/utils';
 
@@ -118,14 +119,13 @@ export default async function TopicHubPage({
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
+    '@id': `${SITE_URL}/topics/${slug}`,
     name: `${cluster.name} — Άρθρα & Οδηγοί`,
     description: cluster.description,
     url: `${SITE_URL}/topics/${slug}`,
-    publisher: {
-      '@type': 'Organization',
-      name: BRAND.name,
-      url: SITE_URL,
-    },
+    inLanguage: 'el',
+    isPartOf: { '@id': `${BRAND.domain}/#website` },
+    publisher: ORG_REF,
     about: {
       '@type': 'Thing',
       name: cluster.pillarKeyword,

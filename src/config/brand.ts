@@ -14,6 +14,9 @@ export const BRAND = {
   correctionsEmail: 'corrections@newsme.gr',
   aiEmail: 'ai@newsme.gr',
   contactUrl: 'https://newsme.gr/contact',
+  aboutUrl: 'https://newsme.gr/about',
+  editorialPolicyUrl: 'https://newsme.gr/editorial-policy',
+  transparencyUrl: 'https://newsme.gr/transparency',
 
   twitter: 'https://twitter.com/newsme',
   twitterHandle: '@newsme',

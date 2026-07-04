@@ -30,9 +30,11 @@ export function organizationJsonLd() {
     url: BRAND.domain,
     logo: {
       '@type': 'ImageObject',
+      '@id': `${BRAND.domain}/#logo`,
       url: `${BRAND.domain}${BRAND.logo}`,
       width: BRAND.logoWidth,
       height: BRAND.logoHeight,
+      caption: BRAND.name,
     },
     ...(sameAs.length ? { sameAs } : {}),
     foundingDate: BRAND.foundingDate,
@@ -48,6 +50,9 @@ export function organizationJsonLd() {
       email: BRAND.editorialEmail,
       url: BRAND.contactUrl,
     },
+    publishingPrinciples: BRAND.editorialPolicyUrl,
+    masthead: BRAND.aboutUrl,
+    ownershipFundingInfo: BRAND.transparencyUrl,
   };
 }
 
@@ -125,21 +130,12 @@ export function newsArticleJsonLd(article: {
     description,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    author: article.authorUrl
-      ? { '@type': 'Person', name: article.author, url: article.authorUrl }
-      : { '@type': 'Person', name: article.author },
-    publisher: {
-      '@type': 'NewsMediaOrganization',
-      '@id': `${BRAND.domain}/#organization`,
-      name: BRAND.name,
-      url: BRAND.domain,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${BRAND.domain}${BRAND.logo}`,
-        width: BRAND.logoWidth,
-        height: BRAND.logoHeight,
-      },
-    },
+    author: article.author
+      ? (article.authorUrl
+        ? { '@type': 'Person', name: article.author, url: article.authorUrl }
+        : { '@type': 'Person', name: article.author })
+      : { '@id': `${BRAND.domain}/#organization` },
+    publisher: { '@id': `${BRAND.domain}/#organization` },
     isPartOf: { '@id': `${BRAND.domain}/#website` },
     articleSection: article.category,
     keywords,

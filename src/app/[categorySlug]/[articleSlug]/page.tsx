@@ -16,6 +16,7 @@ import ArticleCTA from '@/components/sections/ArticleCTA';
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
 import { formatDateWithTime } from '@/lib/utils';
+import { toGreeklish } from '@/lib/greeklish';
 import ViewTracker from '@/components/ui/ViewTracker';
 
 export async function generateStaticParams() {
@@ -239,7 +240,7 @@ export default async function ArticlePage({
                   {article.tags.map((tag) => (
                     <Link
                       key={tag}
-                      href={`/tags/${encodeURIComponent(tag)}`}
+                      href={`/tags/${toGreeklish(tag)}`}
                       className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-xs font-medium px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 transition-colors"
                     >
                       #{tag}
