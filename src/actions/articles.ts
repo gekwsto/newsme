@@ -130,6 +130,7 @@ export async function updateArticle(
     seoDescription?: string;
     status?: ArticleStatus;
     aiCommentary?: string;
+    displayAuthorId?: string | null;
   }
 ) {
   await requireAuth();

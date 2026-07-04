@@ -14,6 +14,23 @@ export function formatDate(dateString: string): string {
   }).format(date);
 }
 
+export function formatDateWithTime(dateString: string): string {
+  const date = new Date(dateString);
+  const datePart = new Intl.DateTimeFormat('el-GR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Athens',
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('el-GR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Europe/Athens',
+  }).format(date);
+  return `${datePart}, ${timePart}`;
+}
+
 export function formatRelativeDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();

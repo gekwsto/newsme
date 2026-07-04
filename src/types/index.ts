@@ -6,6 +6,7 @@ export interface Category {
 
 export interface Author {
   name: string;
+  slug?: string;
   avatar?: string;
   bio?: string;
 }

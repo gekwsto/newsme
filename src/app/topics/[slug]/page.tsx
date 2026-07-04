@@ -203,14 +203,13 @@ export default async function TopicHubPage({
                     <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
                       {article.excerpt}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-                      <span>{article.readTime} λεπτά ανάγνωση</span>
-                      {article.qualityScore && (
+                    {article.qualityScore ? (
+                      <div className="flex justify-end text-xs text-slate-400 dark:text-slate-500">
                         <span className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
                           {article.qualityScore}/10
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>

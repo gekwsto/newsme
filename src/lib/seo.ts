@@ -93,6 +93,7 @@ export function newsArticleJsonLd(article: {
   publishedAt: string;
   updatedAt: string;
   author: string;
+  authorUrl?: string;
   /** Display category name (not internal slug) */
   category: string;
   tags: string[];
@@ -124,10 +125,9 @@ export function newsArticleJsonLd(article: {
     description,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    author: {
-      '@type': 'Person',
-      name: article.author,
-    },
+    author: article.authorUrl
+      ? { '@type': 'Person', name: article.author, url: article.authorUrl }
+      : { '@type': 'Person', name: article.author },
     publisher: {
       '@type': 'NewsMediaOrganization',
       '@id': `${BRAND.domain}/#organization`,

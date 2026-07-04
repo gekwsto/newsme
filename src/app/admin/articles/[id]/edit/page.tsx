@@ -23,12 +23,13 @@ export default async function ArticleEditPage({
 
   const { id } = await params;
 
-  const [article, categories] = await Promise.all([
+  const [article, categories, authors] = await Promise.all([
     prisma.article.findUnique({
       where: { id },
       include: { category: true },
     }),
     prisma.category.findMany({ orderBy: { name: 'asc' } }),
+    prisma.author.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
   if (!article) notFound();
@@ -45,6 +46,7 @@ export default async function ArticleEditPage({
         <ArticleEditForm
           article={article}
           categories={categories}
+          authors={authors}
           imageSlot={
             <ImageManager
               key="image-manager"

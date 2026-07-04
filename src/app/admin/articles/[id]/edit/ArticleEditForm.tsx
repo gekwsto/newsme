@@ -8,9 +8,12 @@ import { updateArticle } from '@/actions/articles';
 import type { Article, Category } from '@/generated/prisma/client';
 import { ArticleStatus } from '@/generated/prisma/enums';
 
+interface AuthorOption { id: string; name: string; }
+
 interface ArticleEditFormProps {
   article: Article & { category: Category };
   categories: Category[];
+  authors: AuthorOption[];
   imageSlot?: ReactNode;
 }
 
@@ -22,7 +25,7 @@ const statusLabels: Record<ArticleStatus, string> = {
   REJECTED: 'Απορριφθέν',
 };
 
-export default function ArticleEditForm({ article, categories, imageSlot }: ArticleEditFormProps) {
+export default function ArticleEditForm({ article, categories, authors, imageSlot }: ArticleEditFormProps) {
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -31,6 +34,7 @@ export default function ArticleEditForm({ article, categories, imageSlot }: Arti
     excerpt: article.excerpt,
     content: article.content,
     categoryId: article.categoryId,
+    displayAuthorId: (article as Article & { displayAuthorId?: string | null }).displayAuthorId ?? '',
     seoTitle: article.seoTitle ?? '',
     seoDescription: article.seoDescription ?? '',
     status: article.status,
@@ -53,6 +57,7 @@ export default function ArticleEditForm({ article, categories, imageSlot }: Arti
         seoTitle: form.seoTitle || undefined,
         seoDescription: form.seoDescription || undefined,
         aiCommentary: form.aiCommentary || undefined,
+        displayAuthorId: form.displayAuthorId || null,
       });
       setSaved(true);
     });
@@ -161,6 +166,15 @@ export default function ArticleEditForm({ article, categories, imageSlot }: Arti
               <select value={form.categoryId} onChange={set('categoryId')} className={inputClass}>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Συντάκτης</label>
+              <select value={form.displayAuthorId} onChange={set('displayAuthorId')} className={inputClass}>
+                <option value="">— Default (Newsme Team) —</option>
+                {authors.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
             </div>

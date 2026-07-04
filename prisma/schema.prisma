@@ -189,6 +189,9 @@ model Article {
   authorId String
   author   User    @relation(fields: [authorId], references: [id])
 
+  displayAuthorId String?
+  displayAuthor   Author? @relation(fields: [displayAuthorId], references: [id], onDelete: SetNull)
+
   tags                 ArticleTag[]
   aiDraft              AiDraft?
   trainingExample      TrainingExample?
@@ -209,6 +212,22 @@ model ArticleTag {
 
   @@id([articleId, tagId])
   @@map("article_tags")
+}
+
+model Author {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  bio       String?   @db.Text
+  avatarUrl String?
+  title     String?
+  isActive  Boolean   @default(true)
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+
+  @@map("authors")
 }
 
 model AiDraft {

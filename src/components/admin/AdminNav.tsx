@@ -26,6 +26,7 @@ import {
   Images,
   Workflow,
   GraduationCap,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,7 @@ const navItems = [
   { href: '/admin/approvals', label: 'Approvals', icon: CheckSquare, exact: false },
   { href: '/admin/publishing-queue', label: 'Queue', icon: ListOrdered, exact: false },
   { href: '/admin/articles', label: 'Άρθρα', icon: FileText, exact: false },
+  { href: '/admin/authors', label: 'Authors', icon: Users, exact: false },
   { href: '/admin/ai-generator', label: 'AI Generator', icon: Sparkles, exact: false },
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
   { href: '/admin/semantic-matrix', label: 'Semantic Matrix', icon: Brain, exact: false },

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Clock } from 'lucide-react';
 import { Article } from '@/types';
 import CategoryBadge from '@/components/ui/CategoryBadge';
 import { formatRelativeDate } from '@/lib/utils';
@@ -103,11 +102,8 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
           {article.excerpt}
         </p>
 
-        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
           <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">{article.author.name}</span>
-          <span className="flex items-center gap-1 text-slate-400 text-xs">
-            <Clock size={11} />{article.readTime} λεπτά
-          </span>
         </div>
       </div>
     </article>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Clock, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Article } from '@/types';
 import CategoryBadge from '@/components/ui/CategoryBadge';
 import { formatRelativeDate } from '@/lib/utils';
@@ -69,9 +69,6 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
             <div>
               <p className="text-white text-sm font-semibold leading-none">{article.author.name}</p>
               <p className="text-slate-400 text-xs mt-0.5">{formatRelativeDate(article.publishedAt)}</p>
-            </div>
-            <div className="flex items-center gap-1 text-slate-400 text-xs ml-2 pl-3 border-l border-white/15">
-              <Clock size={11} />{article.readTime} λεπτά
             </div>
           </div>
 

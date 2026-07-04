@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT, resolveArticleImageUrl } from '@/lib/article-mapper';
 import { addHeadingIds, extractHeadings } from '@/lib/toc';
@@ -16,7 +15,7 @@ import TableOfContents from '@/components/ui/TableOfContents';
 import ArticleCTA from '@/components/sections/ArticleCTA';
 import ArticleCard from '@/components/articles/ArticleCard';
 import TrendingSidebar from '@/components/ui/TrendingSidebar';
-import { formatDate, formatRelativeDate } from '@/lib/utils';
+import { formatDateWithTime } from '@/lib/utils';
 import ViewTracker from '@/components/ui/ViewTracker';
 
 export async function generateStaticParams() {
@@ -147,6 +146,7 @@ export default async function ArticlePage({
     publishedAt: article.publishedAt,
     updatedAt: raw.updatedAt.toISOString(),
     author: article.author.name,
+    authorUrl: article.author.slug ? `${SITE_URL}/authors/${article.author.slug}` : undefined,
     category: displayCat.name,
     tags: article.tags,
     imageUrl: article.imageUrl ?? undefined,
@@ -199,21 +199,21 @@ export default async function ArticlePage({
               {article.excerpt}
             </p>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex flex-wrap items-center gap-4 pb-6 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 font-bold text-sm shrink-0">
                   {article.author.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{article.author.name}</p>
-                  <p className="text-slate-400 text-xs">{formatDate(article.publishedAt)}</p>
+                  {article.author.slug ? (
+                    <Link href={`/authors/${article.author.slug}`} className="font-semibold text-slate-900 dark:text-slate-100 text-sm hover:text-red-600 transition-colors">
+                      {article.author.name}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{article.author.name}</p>
+                  )}
+                  <p className="text-slate-400 text-xs">{formatDateWithTime(article.publishedAt)}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-sm">
-                <span className="flex items-center gap-1">
-                  <Clock size={14} />
-                  {formatRelativeDate(article.publishedAt)}
-                </span>
               </div>
             </div>
 
@@ -252,7 +252,13 @@ export default async function ArticlePage({
                 {article.author.name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="font-bold text-slate-900 dark:text-slate-100">{article.author.name}</p>
+                {article.author.slug ? (
+                  <Link href={`/authors/${article.author.slug}`} className="font-bold text-slate-900 dark:text-slate-100 hover:text-red-600 transition-colors">
+                    {article.author.name}
+                  </Link>
+                ) : (
+                  <p className="font-bold text-slate-900 dark:text-slate-100">{article.author.name}</p>
+                )}
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 leading-relaxed">{`Συντάκτης στο ${BRAND.name}`}</p>
               </div>
             </div>
