@@ -237,9 +237,13 @@ export default async function ArticlePage({
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Tags</p>
                 <div className="flex flex-wrap gap-2">
                   {article.tags.map((tag) => (
-                    <span key={tag} className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                    <Link
+                      key={tag}
+                      href={`/tags/${encodeURIComponent(tag)}`}
+                      className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-xs font-medium px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 transition-colors"
+                    >
                       #{tag}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>
