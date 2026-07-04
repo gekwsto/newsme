@@ -14,8 +14,7 @@ export async function GET() {
   });
 
   const entries = categories.map(
-    (c) =>
-      `  <url>\n    <loc>${xmlEscape(`${SITE_URL}/category/${c.slug}`)}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>`,
+    (c) => `  <url>\n    <loc>${xmlEscape(`${SITE_URL}/category/${c.slug}`)}</loc>\n  </url>`,
   ).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

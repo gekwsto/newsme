@@ -15,18 +15,11 @@ export async function GET() {
     orderBy: { publishedAt: 'desc' },
   });
 
-  const now = Date.now();
-
   const entries = articles.map((a) => {
     const lastMod = a.updatedAt ?? a.publishedAt ?? new Date();
-    const ageDays = (now - lastMod.getTime()) / 86_400_000;
-    const changefreq = ageDays < 7 ? 'daily' : ageDays < 30 ? 'weekly' : 'monthly';
-    const priority = ageDays < 7 ? '0.7' : '0.6';
     return `  <url>
     <loc>${xmlEscape(`${SITE_URL}/${a.category.slug}/${a.slug}`)}</loc>
     <lastmod>${lastMod.toISOString()}</lastmod>
-    <changefreq>${changefreq}</changefreq>
-    <priority>${priority}</priority>
   </url>`;
   }).join('\n');
 
