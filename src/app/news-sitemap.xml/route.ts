@@ -46,7 +46,7 @@ export async function GET() {
     take: MAX_URLS,
   });
 
-  const pubName = xmlEscape(SITE_NAME);
+  const pubName = xmlEscape('Newsme.gr');
 
   const entries = articles.map((a) => {
     const pubDate = (a.publishedAt ?? new Date()).toISOString();

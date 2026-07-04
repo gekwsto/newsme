@@ -12,8 +12,8 @@ export default function Logo({
   const sizeClass = size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-lg';
   return (
     <span className={`font-black ${sizeClass} tracking-widest`}>
-      <span className={firstPartClassName}>News</span>
-      <span className={secondPartClassName}>Me</span>
+      <span className={firstPartClassName}>Newsme</span>
+      <span className={secondPartClassName}>.gr</span>
     </span>
   );
 }
