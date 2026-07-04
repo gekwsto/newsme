@@ -1,7 +1,8 @@
-import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from '@/lib/seo';
+import { SITE_URL, SITE_NAME } from '@/lib/seo';
 import { prisma } from '@/lib/db';
 import { ArticleStatus, ArticleType } from '@/generated/prisma/enums';
 import { xmlEscape, xmlResponse } from '@/lib/xml';
+import { resolveArticleImageUrl } from '@/lib/article-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,11 +31,10 @@ export async function GET() {
       slug: true,
       title: true,
       publishedAt: true,
-      // Image fields — priority resolved at render time
+      // Same two image fields used by the article page and OG/Twitter/JSON-LD
       generatedImageUrl: true,
       coverImage: true,
-      suggestedImageUrl: true,
-      // Semantic keywords (AI-generated SEO terms + evergreen topic label)
+      // Semantic keywords
       secondaryKeywords: true,
       evergreenKeyword: true,
       // Category
@@ -52,26 +52,20 @@ export async function GET() {
     const pubDate = (a.publishedAt ?? new Date()).toISOString();
     const loc = xmlEscape(`${SITE_URL}/${a.category.slug}/${a.slug}`);
 
-    // Image priority: generatedImageUrl → coverImage → suggestedImageUrl → site OG fallback
-    // Note: featuredImageUrl is not a schema field; suggestedImageUrl is the closest equivalent
-    const rawImage =
-      a.generatedImageUrl ?? a.coverImage ?? a.suggestedImageUrl ?? DEFAULT_OG_IMAGE;
-    const imageLoc = xmlEscape(absoluteUrl(rawImage));
+    // resolveArticleImageUrl is the single source of truth used by the article page,
+    // OG tags, Twitter Card, and JSON-LD. No image block when article has no image.
+    const rawImage = resolveArticleImageUrl(a.generatedImageUrl, a.coverImage);
+    const imageBlock = rawImage
+      ? `\n    <image:image>\n      <image:loc>${xmlEscape(absoluteUrl(rawImage))}</image:loc>\n    </image:image>`
+      : '';
 
-    // Keywords: tags + category + secondaryKeywords + evergreenKeyword (topics proxy)
-    // Article has no direct topics relation; evergreenKeyword and secondaryKeywords
-    // are the schema-level equivalents for semantic/topic signals.
     const tagNames = a.tags.map((t) => t.tag.name);
     const keywords = xmlEscape(
       buildKeywords([...tagNames, a.category.name, ...a.secondaryKeywords, a.evergreenKeyword]),
     );
 
     return `  <url>
-    <loc>${loc}</loc>
-
-    <image:image>
-      <image:loc>${imageLoc}</image:loc>
-    </image:image>
+    <loc>${loc}</loc>${imageBlock}
 
     <news:news>
       <news:publication_date>${pubDate}</news:publication_date>

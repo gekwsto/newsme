@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { prisma } from '@/lib/db';
-import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT } from '@/lib/article-mapper';
+import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT, resolveArticleImageUrl } from '@/lib/article-mapper';
 import { addHeadingIds, extractHeadings } from '@/lib/toc';
 import { SITE_URL, articleCanonical, newsArticleJsonLd, breadcrumbJsonLd, faqPageJsonLd, stripHtmlToText, DEFAULT_OG_IMAGE, SITE_NAME, SITE_TWITTER } from '@/lib/seo';
 import { BRAND } from '@/config/brand';
@@ -61,7 +61,7 @@ export async function generateMetadata({
   const description = raw.seoDescription || raw.excerpt || '';
   const tags = raw.tags.map((t) => t.tag.name);
   const publishedTime = (raw.publishedAt ?? raw.updatedAt).toISOString();
-  const ogImage = raw.generatedImageUrl ?? raw.coverImage ?? DEFAULT_OG_IMAGE;
+  const ogImage = resolveArticleImageUrl(raw.generatedImageUrl, raw.coverImage) ?? DEFAULT_OG_IMAGE;
 
   return {
     title,

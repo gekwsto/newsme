@@ -21,6 +21,18 @@ export interface PrismaArticleLike {
   tags?: PrismaTag[];
 }
 
+/**
+ * Single source of truth for article featured image resolution.
+ * Returns null when no image exists — callers decide how to handle the absence.
+ * Priority: generatedImageUrl → coverImage → null
+ */
+export function resolveArticleImageUrl(
+  generatedImageUrl: string | null | undefined,
+  coverImage: string | null | undefined,
+): string | null {
+  return generatedImageUrl ?? coverImage ?? null;
+}
+
 export function mapPrismaArticle(a: PrismaArticleLike): Article {
   const category: Category = {
     name: a.category.name,
@@ -42,7 +54,7 @@ export function mapPrismaArticle(a: PrismaArticleLike): Article {
     author,
     publishedAt: (a.publishedAt ?? a.createdAt).toISOString(),
     readTime: a.readTime,
-    imageUrl: a.generatedImageUrl ?? a.coverImage ?? undefined,
+    imageUrl: resolveArticleImageUrl(a.generatedImageUrl, a.coverImage) ?? undefined,
     tags: a.tags?.map((t) => t.tag.name) ?? [],
     aiCommentary: a.aiCommentary ?? undefined,
     views: 0,
