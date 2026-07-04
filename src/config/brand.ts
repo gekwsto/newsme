@@ -1,6 +1,6 @@
 export const BRAND = {
-  name: 'NewsMe',
-  shortName: 'NewsMe',
+  name: 'Newsme',
+  shortName: 'Newsme',
   tagline: 'Η καθημερινή ενημέρωση με αξιοπιστία.',
   description: 'Η καθημερινή ενημέρωση με αξιοπιστία.',
 
@@ -27,10 +27,10 @@ export const BRAND = {
   favicon: '/favicon.ico',
   ogImage: '/og-default.jpg',
 
-  publisher: 'NewsMe',
-  author: 'NewsMe',
+  publisher: 'Newsme',
+  author: 'Newsme',
 
   foundingDate: '2025-01-01',
-  founders: ['NewsMe Editorial Team'] as string[],
+  founders: ['Newsme Editorial Team'] as string[],
   addressLocality: 'Athens',
 } as const;
