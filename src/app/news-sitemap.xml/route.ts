@@ -12,6 +12,11 @@ function absoluteUrl(url: string): string {
   return url.startsWith('http') ? url : `${SITE_URL}${url}`;
 }
 
+function buildKeywords(parts: (string | null | undefined)[]): string {
+  const flat = parts.flatMap((p) => (p ? [p] : []));
+  return [...new Set(flat)].join(', ');
+}
+
 export async function GET() {
   const since = new Date(Date.now() - FORTY_EIGHT_HOURS_MS);
 
@@ -25,11 +30,16 @@ export async function GET() {
       slug: true,
       title: true,
       publishedAt: true,
+      // Image fields — priority resolved at render time
       generatedImageUrl: true,
       coverImage: true,
       suggestedImageUrl: true,
+      // Semantic keywords (AI-generated SEO terms + evergreen topic label)
       secondaryKeywords: true,
-      category: { select: { slug: true, name: true } },
+      evergreenKeyword: true,
+      // Category
+      category: { select: { id: true, slug: true, name: true } },
+      // Tags
       tags: { select: { tag: { select: { name: true } } } },
     },
     orderBy: { publishedAt: 'desc' },
@@ -42,13 +52,19 @@ export async function GET() {
     const pubDate = (a.publishedAt ?? new Date()).toISOString();
     const loc = xmlEscape(`${SITE_URL}/${a.category.slug}/${a.slug}`);
 
-    // Priority: generated → cover → suggested → site OG fallback
-    const rawImage = a.generatedImageUrl ?? a.coverImage ?? a.suggestedImageUrl ?? DEFAULT_OG_IMAGE;
+    // Image priority: generatedImageUrl → coverImage → suggestedImageUrl → site OG fallback
+    // Note: featuredImageUrl is not a schema field; suggestedImageUrl is the closest equivalent
+    const rawImage =
+      a.generatedImageUrl ?? a.coverImage ?? a.suggestedImageUrl ?? DEFAULT_OG_IMAGE;
     const imageLoc = xmlEscape(absoluteUrl(rawImage));
 
+    // Keywords: tags + category + secondaryKeywords + evergreenKeyword (topics proxy)
+    // Article has no direct topics relation; evergreenKeyword and secondaryKeywords
+    // are the schema-level equivalents for semantic/topic signals.
     const tagNames = a.tags.map((t) => t.tag.name);
-    const keywordsRaw = [...tagNames, a.category.name, ...a.secondaryKeywords].filter(Boolean);
-    const keywords = xmlEscape([...new Set(keywordsRaw)].join(', '));
+    const keywords = xmlEscape(
+      buildKeywords([...tagNames, a.category.name, ...a.secondaryKeywords, a.evergreenKeyword]),
+    );
 
     return `  <url>
     <loc>${loc}</loc>
