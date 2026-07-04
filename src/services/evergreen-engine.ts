@@ -284,6 +284,7 @@ async function generateOneTopic(
         sourceType: SourceType.AI_GENERATED,
         categoryId: resolvedCategory.id,
         authorId,
+        displayAuthorId: (await prisma.author.findFirst({ where: { isDefault: true } }))?.id ?? null,
         readTime: estimateReadTime(finalHtml),
         evergreenKeyword: topic.primaryKeyword,
         secondaryKeywords: enrichedSecondaryKeywords,

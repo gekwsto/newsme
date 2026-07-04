@@ -529,6 +529,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           sourceType: SourceType.RSS_SUMMARY,
           categoryId: resolvedCategoryId,
           authorId: adminUser.id,
+          displayAuthorId: (await prisma.author.findFirst({ where: { isDefault: true } }))?.id ?? null,
           readTime: estimateReadTime(generated.contentHtml),
           suggestedImageUrl: item.imageUrl,
           imageStatus: item.imageUrl ? ImageStatus.RSS_AVAILABLE : ImageStatus.NONE,

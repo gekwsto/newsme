@@ -27,6 +27,7 @@ export async function createArticle(data: {
   try {
     const user = await requireAuth();
     const slug = await uniqueSlug(data.title);
+    const defaultAuthor = await prisma.author.findFirst({ where: { isDefault: true } });
     const article = await prisma.article.create({
       data: {
         title: data.title,
@@ -38,6 +39,7 @@ export async function createArticle(data: {
         sourceType: SourceType.MANUAL,
         categoryId: data.categoryId,
         authorId: user.id,
+        displayAuthorId: defaultAuthor?.id ?? null,
         readTime: 1,
       },
     });
