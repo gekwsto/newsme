@@ -79,7 +79,7 @@ export default async function TopicHubPage({
         readTime: true,
         qualityScore: true,
         aiSeoScore: true,
-        category: { select: { name: true, color: true } },
+        category: { select: { name: true, slug: true, color: true } },
         faqJson: true,
       },
       orderBy: { publishedAt: 'desc' },
@@ -195,7 +195,7 @@ export default async function TopicHubPage({
                     key={article.id}
                     className="group border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-slate-400 dark:hover:border-slate-600 transition-colors"
                   >
-                    <Link href={`/article/${article.slug}`}>
+                    <Link href={`/${article.category.slug}/${article.slug}`}>
                       <h3 className="font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2 line-clamp-2 leading-snug">
                         {article.title}
                       </h3>
@@ -232,7 +232,7 @@ export default async function TopicHubPage({
                       className="flex items-start justify-between gap-4 py-3 border-b border-slate-100 dark:border-slate-800 group"
                     >
                       <Link
-                        href={`/article/${article.slug}`}
+                        href={`/${article.category.slug}/${article.slug}`}
                         className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug flex-1"
                       >
                         {article.title}

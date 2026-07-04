@@ -103,7 +103,7 @@ export async function publishArticle(articleId: string) {
 
   revalidatePath('/');
   revalidatePath('/articles');
-  revalidatePath(`/article/${article.slug}`);
+  revalidatePath(`/${article.category.slug}/${article.slug}`);
   revalidatePath(`/category/${article.category.slug}`);
   revalidatePath('/admin/approvals');
   revalidatePath('/admin');

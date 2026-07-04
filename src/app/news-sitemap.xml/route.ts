@@ -17,7 +17,7 @@ export async function GET() {
       articleType: ArticleType.NEWS,
       publishedAt: { gte: since },
     },
-    select: { slug: true, title: true, publishedAt: true },
+    select: { slug: true, title: true, publishedAt: true, category: { select: { slug: true } } },
     orderBy: { publishedAt: 'desc' },
     take: MAX_URLS,
   });
@@ -27,7 +27,7 @@ export async function GET() {
   const entries = articles.map((a) => {
     const pubDate = (a.publishedAt ?? new Date()).toISOString();
     return `  <url>
-    <loc>${xmlEscape(`${SITE_URL}/article/${a.slug}`)}</loc>
+    <loc>${xmlEscape(`${SITE_URL}/${a.category.slug}/${a.slug}`)}</loc>
     <news:news>
       <news:publication>
         <news:name>${pubName}</news:name>

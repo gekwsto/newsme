@@ -48,7 +48,7 @@ export default async function TrendingSidebar() {
             {recentArticles.map((article, index) => (
               <Link
                 key={article.id}
-                href={`/article/${article.slug}`}
+                href={`/${article.category.slug}/${article.slug}`}
                 className="flex gap-3 px-4 py-3 group hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors"
               >
                 <span

@@ -49,7 +49,7 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
         </div>
 
         {/* Title */}
-        <Link href={`/article/${article.slug}`}>
+        <Link href={`/${article.category.slug}/${article.slug}`}>
           <h1 className="text-white text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-black leading-tight max-w-2xl group-hover:text-red-200 transition-colors duration-300 drop-shadow-lg">
             {article.title}
           </h1>
@@ -76,7 +76,7 @@ export default function FeaturedArticle({ article }: FeaturedArticleProps) {
           </div>
 
           <Link
-            href={`/article/${article.slug}`}
+            href={`/${article.category.slug}/${article.slug}`}
             className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-sm font-bold px-6 py-3 rounded-full transition-all duration-200 shrink-0 shadow-lg hover:shadow-red-900/50 hover:scale-105"
           >
             Διάβασε το

@@ -14,7 +14,7 @@ export default async function DiscussionTopics() {
     where: { status: ArticleStatus.PUBLISHED },
     orderBy: { views: 'desc' },
     take: 7,
-    select: { id: true, title: true, slug: true, views: true },
+    select: { id: true, title: true, slug: true, views: true, category: { select: { slug: true } } },
   });
 
   if (articles.length === 0) return null;
@@ -42,7 +42,7 @@ export default async function DiscussionTopics() {
           return (
             <Link
               key={article.id}
-              href={`/article/${article.slug}`}
+              href={`/${article.category.slug}/${article.slug}`}
               className={`relative group flex-grow min-w-[200px] max-w-full sm:max-w-[calc(50%-0.375rem)] bg-white dark:bg-slate-800 border rounded-xl px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-slate-900/40 ${
                 isHot
                   ? 'border-red-200 dark:border-red-800/50 hover:border-red-400 dark:hover:border-red-600'

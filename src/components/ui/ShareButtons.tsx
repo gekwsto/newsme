@@ -8,11 +8,12 @@ import { BRAND } from '@/config/brand';
 interface ShareButtonsProps {
   title: string;
   slug: string;
+  categorySlug: string;
 }
 
-export default function ShareButtons({ title, slug }: ShareButtonsProps) {
+export default function ShareButtons({ title, slug, categorySlug }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${BRAND.domain}/article/${slug}`;
+  const shareUrl = `${BRAND.domain}/${categorySlug}/${slug}`;
 
   const handleCopy = async () => {
     await navigator.clipboard?.writeText(shareUrl);

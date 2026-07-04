@@ -11,7 +11,7 @@ export async function GET() {
       status: ArticleStatus.PUBLISHED,
       articleType: ArticleType.EVERGREEN,
     },
-    select: { slug: true, updatedAt: true, publishedAt: true },
+    select: { slug: true, updatedAt: true, publishedAt: true, category: { select: { slug: true } } },
     orderBy: { publishedAt: 'desc' },
   });
 
@@ -22,7 +22,7 @@ export async function GET() {
     const ageDays = (now - lastMod.getTime()) / 86_400_000;
     const changefreq = ageDays < 30 ? 'weekly' : 'monthly';
     return `  <url>
-    <loc>${xmlEscape(`${SITE_URL}/article/${a.slug}`)}</loc>
+    <loc>${xmlEscape(`${SITE_URL}/${a.category.slug}/${a.slug}`)}</loc>
     <lastmod>${lastMod.toISOString()}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>0.8</priority>

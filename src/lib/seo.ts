@@ -12,8 +12,8 @@ export function canonicalUrl(path: string): string {
   return `${BRAND.domain}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-export function articleCanonical(slug: string): string {
-  return canonicalUrl(`/article/${slug}`);
+export function articleCanonical(categorySlug: string, articleSlug: string): string {
+  return canonicalUrl(`/${categorySlug}/${articleSlug}`);
 }
 
 export function categoryCanonical(slug: string): string {
@@ -89,6 +89,7 @@ export function newsArticleJsonLd(article: {
   title: string;
   excerpt: string;
   slug: string;
+  categorySlug: string;
   publishedAt: string;
   updatedAt: string;
   author: string;
@@ -109,14 +110,15 @@ export function newsArticleJsonLd(article: {
       ? `${article.excerpt.slice(0, 157)}…`
       : article.excerpt || '';
   const keywords = [article.category, ...article.tags].filter(Boolean).join(', ');
+  const url = articleCanonical(article.categorySlug, article.slug);
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': schemaType,
-    '@id': articleCanonical(article.slug),
+    '@id': url,
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': articleCanonical(article.slug),
+      '@id': url,
     },
     headline,
     description,

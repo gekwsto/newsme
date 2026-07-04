@@ -27,7 +27,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
   if (variant === 'horizontal') {
     return (
       <article className="flex gap-4 group">
-        <Link href={`/article/${article.slug}`} className="shrink-0">
+        <Link href={`/${article.category.slug}/${article.slug}`} className="shrink-0">
           <div className="relative w-28 h-20 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
             {article.imageUrl ? (
               <Image
@@ -44,7 +44,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
         </Link>
         <div className="flex-1 min-w-0">
           <CategoryBadge category={article.category} size="sm" />
-          <Link href={`/article/${article.slug}`}>
+          <Link href={`/${article.category.slug}/${article.slug}`}>
             <h3 className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 group-hover:text-red-600 transition-colors leading-snug">
               {article.title}
             </h3>
@@ -59,7 +59,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
     return (
       <article className="group border-b border-slate-100 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
         <CategoryBadge category={article.category} size="sm" />
-        <Link href={`/article/${article.slug}`}>
+        <Link href={`/${article.category.slug}/${article.slug}`}>
           <h3 className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 group-hover:text-red-600 transition-colors">
             {article.title}
           </h3>
@@ -71,7 +71,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
 
   return (
     <article className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md dark:hover:shadow-slate-900/50 transition-shadow group flex flex-col">
-      <Link href={`/article/${article.slug}`} className="relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-700">
+      <Link href={`/${article.category.slug}/${article.slug}`} className="relative block aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-700">
         {article.imageUrl ? (
           <Image
             src={article.imageUrl}
@@ -93,7 +93,7 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
       <div className="p-4 flex flex-col flex-1">
         <CategoryBadge category={article.category} />
 
-        <Link href={`/article/${article.slug}`} className="mt-2 flex-1">
+        <Link href={`/${article.category.slug}/${article.slug}`} className="mt-2 flex-1">
           <h2 className="font-bold text-slate-900 dark:text-slate-50 leading-snug line-clamp-2 group-hover:text-red-600 transition-colors text-[15px]">
             {article.title}
           </h2>

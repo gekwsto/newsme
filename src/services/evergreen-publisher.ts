@@ -93,7 +93,7 @@ export async function runEvergreenPublisher(force = false): Promise<PublisherRes
       status: ArticleStatus.DRAFT,
     },
     orderBy: { createdAt: 'asc' },
-    select: { id: true, title: true, slug: true, content: true },
+    select: { id: true, title: true, slug: true, content: true, category: { select: { slug: true } } },
   });
 
   if (!draft) {
@@ -123,7 +123,7 @@ export async function runEvergreenPublisher(force = false): Promise<PublisherRes
   void markTrainingPublished(draft.id, draft.title, draft.content);
   revalidatePath('/');
   revalidatePath('/articles');
-  revalidatePath(`/article/${draft.slug}`);
+  revalidatePath(`/${draft.category.slug}/${draft.slug}`);
   revalidatePath('/sitemap.xml');
   revalidatePath('/sitemap-evergreen.xml');
 
