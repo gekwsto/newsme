@@ -13,6 +13,7 @@ import { getSemanticMatrixConfig, computeSemanticScore } from '@/lib/semantic-fi
 import { logEvent, SERVICE } from '@/lib/monitoring/events';
 import { ArticleStatus, ImageStatus, SourceType, SocialPostStatus, DiscoveredStatus, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 import { selectFeaturedImage } from '@/lib/images/select-featured-image';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -524,6 +525,7 @@ export async function generateDraftFromDiscoveredArticle(
         sourceType: SourceType.RSS_SUMMARY,
         categoryId,
         authorId: user.id,
+        displayAuthorId: await pickDisplayAuthor(),
         readTime: estimateReadTime(generated.contentHtml),
         suggestedImageUrl: discovered.imageUrl || null,
         imageStatus: hasRssImage ? 'RSS_AVAILABLE' : 'NONE',

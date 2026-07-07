@@ -21,6 +21,7 @@ import {
   type EvergreenArticleType,
 } from '@/lib/ai/evergreen-schemas';
 import { computeSeoScore } from '@/lib/seo-checker';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 
 export type { EvergreenInput };
 
@@ -150,6 +151,7 @@ export async function generateAndSaveEvergreenArticle(
         sourceType: SourceType.AI_GENERATED,
         categoryId: validated.categoryId,
         authorId: session.user.id,
+        displayAuthorId: await pickDisplayAuthor(),
         readTime: estimateReadTime(generated.contentHtml),
         evergreenKeyword: validated.primaryKeyword,
         secondaryKeywords,

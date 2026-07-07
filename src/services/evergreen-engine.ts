@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 import {
   generateEvergreenContent,
   type EvergreenGenerateOptions,
@@ -284,7 +285,7 @@ async function generateOneTopic(
         sourceType: SourceType.AI_GENERATED,
         categoryId: resolvedCategory.id,
         authorId,
-        displayAuthorId: (await prisma.author.findFirst({ where: { isDefault: true } }))?.id ?? null,
+        displayAuthorId: await pickDisplayAuthor(),
         readTime: estimateReadTime(finalHtml),
         evergreenKeyword: topic.primaryKeyword,
         secondaryKeywords: enrichedSecondaryKeywords,

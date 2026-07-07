@@ -3,6 +3,14 @@
     {
       "path": "/api/scheduler/run",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/scheduler/news-pipeline",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/scheduler/evergreen-pipeline",
+      "schedule": "0 * * * *"
     }
   ]
 }

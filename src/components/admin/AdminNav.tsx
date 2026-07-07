@@ -27,6 +27,7 @@ import {
   Workflow,
   GraduationCap,
   Users,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +48,7 @@ const navItems = [
   { href: '/admin/news-settings', label: 'Auto Pipeline', icon: Workflow, exact: false },
   { href: '/admin/pipeline-logs', label: 'Pipeline Logs', icon: Activity, exact: false },
   { href: '/admin/image-library', label: 'Image Library', icon: Images, exact: false },
+  { href: '/admin/image-library/taxonomy', label: 'Image Taxonomy', icon: Tag, exact: false },
   { href: '/admin/image-settings', label: 'Image Settings', icon: ImageIcon, exact: false },
   { href: '/admin/social-posts', label: 'Social Posts', icon: MessageSquare, exact: false },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart2, exact: false },

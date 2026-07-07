@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import { markTrainingPublished, markTrainingRejected, markTrainingEdited } from '@/lib/training-capture';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 
 async function uniqueSlug(base: string): Promise<string> {
   const safe = base.toLowerCase().replace(/[^a-z0-9Ͱ-Ͽἀ-῿]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'article';
@@ -28,7 +29,6 @@ export async function createArticle(data: {
   try {
     const user = await requireAuth();
     const slug = await uniqueSlug(data.title);
-    const defaultAuthor = await prisma.author.findFirst({ where: { isDefault: true } });
     const article = await prisma.article.create({
       data: {
         title: data.title,
@@ -40,7 +40,7 @@ export async function createArticle(data: {
         sourceType: SourceType.MANUAL,
         categoryId: data.categoryId,
         authorId: user.id,
-        displayAuthorId: defaultAuthor?.id ?? null,
+        displayAuthorId: await pickDisplayAuthor(),
         readTime: 1,
       },
     });

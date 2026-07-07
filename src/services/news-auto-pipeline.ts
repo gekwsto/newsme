@@ -11,6 +11,7 @@ import { SITE_URL } from '@/lib/seo';
 import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, PipelineRunStatus, SocialPostStatus, SourceType, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
 import { selectFeaturedImage } from '@/lib/images/select-featured-image';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 
 const MODEL = 'gpt-5-mini';
 const FEED_TIMEOUT_MS = 12_000;
@@ -530,7 +531,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           sourceType: SourceType.RSS_SUMMARY,
           categoryId: resolvedCategoryId,
           authorId: adminUser.id,
-          displayAuthorId: (await prisma.author.findFirst({ where: { isDefault: true } }))?.id ?? null,
+          displayAuthorId: await pickDisplayAuthor(),
           readTime: estimateReadTime(generated.contentHtml),
           suggestedImageUrl: item.imageUrl,
           coverImage: item.imageUrl ?? null,

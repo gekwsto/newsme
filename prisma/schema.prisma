@@ -587,6 +587,8 @@ model ImageTag {
   slug       String
   categoryId String
   category   ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  /** JSON array of { keyword, aliases, isPriority } — keyword templates applied to all images with this tag */
+  keywords   Json          @default("[]")
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   assets     ImageAsset[]

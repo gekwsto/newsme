@@ -93,13 +93,21 @@ function isSeasonallyActive(seasonStart: string | null, seasonEnd: string | null
   return today >= seasonStart || today <= seasonEnd;
 }
 
+interface ScoringKeyword {
+  keyword: string;
+  aliases: unknown;
+  isPriority: boolean;
+  isOverride: boolean;
+}
+
 function scoreImage(
   image: {
     qualityScore: number;
     lastUsedAt: Date | null;
     usedCount: number;
     tagSlug: string | null;
-    keywords: { keyword: string; aliases: unknown; isPriority: boolean; isOverride: boolean }[];
+    keywords: ScoringKeyword[];
+    tagKeywords?: ScoringKeyword[];
   },
   semanticSet: Set<string>,
   articleTitleNorm: string,
@@ -130,9 +138,10 @@ function scoreImage(
     }
   }
 
-  // Keyword matching
+  // Keyword matching — image-level + tag-level templates merged
+  const allKeywords = [...image.keywords, ...(image.tagKeywords ?? [])];
   let matchCount = 0;
-  for (const kw of image.keywords) {
+  for (const kw of allKeywords) {
     const aliases = Array.isArray(kw.aliases) ? (kw.aliases as string[]) : [];
     const allForms = [norm(kw.keyword), ...aliases.map(norm)].filter(Boolean);
     const hit = allForms.some((f) => semanticSet.has(f));
@@ -225,7 +234,7 @@ export async function selectFeaturedImage(
       lastUsedAt: true,
       seasonStart: true,
       seasonEnd: true,
-      tag: { select: { slug: true } },
+      tag: { select: { slug: true, keywords: true } },
       keywords: {
         select: { keyword: true, aliases: true, isPriority: true, isOverride: true },
       },
@@ -239,8 +248,9 @@ export async function selectFeaturedImage(
 
   if (candidates.length > 0) {
     const scored = candidates.map((img) => {
+      const rawTagKws = Array.isArray(img.tag?.keywords) ? img.tag!.keywords as unknown as ScoringKeyword[] : [];
       const { score, breakdown } = scoreImage(
-        { ...img, tagSlug: img.tag?.slug ?? null },
+        { ...img, tagSlug: img.tag?.slug ?? null, tagKeywords: rawTagKws },
         semanticSet,
         articleTitleNorm,
         s,

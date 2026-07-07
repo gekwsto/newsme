@@ -6,6 +6,7 @@ import { generateArticleContent, PROMPT_VERSION, GENERATOR_VERSION } from '@/lib
 import { GenerateInputSchema, type GenerateInput } from '@/lib/ai/schemas';
 import { ArticleStatus, SourceType, SocialPostStatus, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
+import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 
 export type GenerateResult =
   | { ok: true; articleId: string; title: string }
@@ -78,6 +79,7 @@ export async function generateAndSaveArticle(input: GenerateInput): Promise<Gene
         sourceType,
         categoryId,
         authorId: session.user.id,
+        displayAuthorId: await pickDisplayAuthor(),
         readTime: estimateReadTime(generated.contentHtml),
       },
     });

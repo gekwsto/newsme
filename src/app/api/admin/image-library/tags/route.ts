@@ -1,8 +1,19 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+export interface TagKeyword {
+  keyword: string;
+  aliases: string[];
+  isPriority: boolean;
+}
+
 function slugify(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-');
+  return s
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zα-ω0-9-]/g, '')
+    .replace(/-+/g, '-');
 }
 
 export async function GET(req: Request) {
@@ -39,6 +50,22 @@ export async function POST(req: Request) {
   });
 
   return Response.json(tag, { status: 201 });
+}
+
+export async function PATCH(req: Request) {
+  const session = await auth();
+  if (!session?.user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  if (!id) return Response.json({ error: 'id required' }, { status: 400 });
+
+  const body = await req.json() as { keywords?: TagKeyword[] };
+  const tag = await prisma.imageTag.update({
+    where: { id },
+    data: { keywords: (body.keywords ?? []) as unknown as never },
+  });
+  return Response.json(tag);
 }
 
 export async function DELETE(req: Request) {
