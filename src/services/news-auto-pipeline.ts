@@ -533,6 +533,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           displayAuthorId: (await prisma.author.findFirst({ where: { isDefault: true } }))?.id ?? null,
           readTime: estimateReadTime(generated.contentHtml),
           suggestedImageUrl: item.imageUrl,
+          coverImage: item.imageUrl ?? null,
           imageStatus: item.imageUrl ? ImageStatus.RSS_AVAILABLE : ImageStatus.NONE,
           publishedAt: status === ArticleStatus.PUBLISHED ? new Date() : null,
         },
