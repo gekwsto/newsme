@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env*
+node_modules
+.next
+# uploads are provided at runtime via docker-compose bind mount
+public/uploads
+# Prisma client is regenerated during docker build (prisma generate)
+src/generated/prisma

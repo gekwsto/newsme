@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        # Passed at build time so NEXT_PUBLIC_* is baked into the JS bundle.
+        # docker-compose reads this automatically from .env in the repo root.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://newsme.gr}
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      # Bind-mount the uploads directory so images survive container rebuilds.
+      # Host path ./public/uploads is relative to this docker-compose.yml file.
+      - ./public/uploads:/app/public/uploads
+    restart: unless-stopped

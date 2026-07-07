@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# runtime image uploads — served via Docker bind mount in production
+/public/uploads/

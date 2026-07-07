@@ -51,6 +51,8 @@ interface ImageAsset {
   tagId: string | null;
   collectionId: string | null;
   publicUrl: string;
+  originalUrl: string | null;
+  pexelsUrl: string | null;
   photographer: string | null;
   altText: string;
   description: string | null;
@@ -845,7 +847,21 @@ export default function ImageLibraryClient({ initialCategories, totalAssets, act
                         'border-slate-200 dark:border-slate-700 hover:border-violet-400'
                       }`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={asset.publicUrl} alt={asset.altText} className="w-full aspect-video object-cover" loading="lazy" />
+                      <img
+                        src={asset.originalUrl || asset.publicUrl}
+                        alt={asset.altText}
+                        className="w-full aspect-video object-cover bg-slate-200 dark:bg-slate-700"
+                        loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (asset.publicUrl && img.src !== asset.publicUrl) {
+                            img.src = asset.publicUrl;
+                          } else {
+                            img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='90' viewBox='0 0 160 90'%3E%3Crect width='160' height='90' fill='%23e2e8f0'/%3E%3Ctext x='80' y='52' font-size='28' text-anchor='middle' fill='%2394a3b8'%3E%F0%9F%96%BC%EF%B8%8F%3C/text%3E%3C/svg%3E";
+                            img.onerror = null;
+                          }
+                        }}
+                      />
 
                       {/* Keywords badge */}
                       {asset.keywords.length === 0 && (
@@ -909,12 +925,47 @@ export default function ImageLibraryClient({ initialCategories, totalAssets, act
                     <div className="p-5 space-y-4">
                       <div className="flex gap-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={editingAsset.publicUrl} alt={editingAsset.altText}
-                          className="w-32 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0" />
+                        <img
+                          src={editingAsset.originalUrl || editingAsset.publicUrl}
+                          alt={editingAsset.altText}
+                          className="w-32 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-200 dark:bg-slate-700"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (editingAsset.publicUrl && img.src !== editingAsset.publicUrl) {
+                              img.src = editingAsset.publicUrl;
+                            } else {
+                              img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='96' viewBox='0 0 128 96'%3E%3Crect width='128' height='96' fill='%23e2e8f0'/%3E%3Ctext x='64' y='56' font-size='32' text-anchor='middle' fill='%2394a3b8'%3E%F0%9F%96%BC%EF%B8%8F%3C/text%3E%3C/svg%3E";
+                              img.onerror = null;
+                            }
+                          }}
+                        />
                         <div className="flex-1 min-w-0 text-xs text-slate-500 dark:text-slate-400 space-y-1">
                           <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm truncate">{editingAsset.altText}</p>
                           <p>{editingAsset.width}×{editingAsset.height} · {editingAsset.uploadSource}</p>
                           <p>Χρησιμοποιήθηκε {editingAsset.usedCount}× · Τελευταία: {fmt(editingAsset.lastUsedAt)}</p>
+                          <div className="pt-1 space-y-0.5">
+                            <p className="truncate">
+                              <span className="font-semibold text-slate-600 dark:text-slate-300">Local:</span>{' '}
+                              <a href={editingAsset.publicUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-mono" title={editingAsset.publicUrl}>
+                                {editingAsset.publicUrl.slice(0, 40)}{editingAsset.publicUrl.length > 40 ? '…' : ''}
+                              </a>
+                            </p>
+                            {editingAsset.originalUrl && (
+                              <p className="truncate">
+                                <span className="font-semibold text-slate-600 dark:text-slate-300">CDN:</span>{' '}
+                                <a href={editingAsset.originalUrl} target="_blank" rel="noopener noreferrer" className="text-violet-500 hover:underline font-mono">
+                                  Pexels CDN ↗
+                                </a>
+                              </p>
+                            )}
+                            {editingAsset.pexelsUrl && (
+                              <p>
+                                <a href={editingAsset.pexelsUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-violet-500 hover:underline">
+                                  Άνοιγμα στο Pexels ↗
+                                </a>
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1189,7 +1240,8 @@ export default function ImageLibraryClient({ initialCategories, totalAssets, act
                 <>
                   <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={debugResult.result.publicUrl} alt="" className="w-20 h-14 object-cover rounded-lg shrink-0" />
+                    <img src={debugResult.result.publicUrl} alt="" className="w-20 h-14 object-cover rounded-lg shrink-0 bg-slate-200"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='56' viewBox='0 0 80 56'%3E%3Crect width='80' height='56' fill='%23e2e8f0'/%3E%3Ctext x='40' y='33' font-size='18' text-anchor='middle' fill='%2394a3b8'%3E%F0%9F%96%BC%EF%B8%8F%3C/text%3E%3C/svg%3E"; (e.currentTarget as HTMLImageElement).onerror = null; }} />
                     <div>
                       <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Winner — Fallback Level {debugResult.result.fallbackLevel}</p>
                       <p className="text-xs text-slate-600 dark:text-slate-400">{debugResult.result.altText}</p>
@@ -1209,7 +1261,8 @@ export default function ImageLibraryClient({ initialCategories, totalAssets, act
                           <div className="flex items-start gap-3">
                             <span className="text-lg font-black text-slate-400 w-6 shrink-0">#{item.rank}</span>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={item.publicUrl} alt="" className="w-16 h-11 object-cover rounded shrink-0" />
+                            <img src={item.publicUrl} alt="" className="w-16 h-11 object-cover rounded shrink-0 bg-slate-200"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='44' viewBox='0 0 64 44'%3E%3Crect width='64' height='44' fill='%23e2e8f0'/%3E%3Ctext x='32' y='27' font-size='16' text-anchor='middle' fill='%2394a3b8'%3E%F0%9F%96%BC%EF%B8%8F%3C/text%3E%3C/svg%3E"; (e.currentTarget as HTMLImageElement).onerror = null; }} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{item.altText}</p>
