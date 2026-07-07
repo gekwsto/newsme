@@ -183,11 +183,12 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
       where: { enabled: true, allowAutoGeneration: true },
       select: { id: true, name: true, url: true, language: true, country: true, categoryId: true, reliabilityScore: true },
     }),
-    prisma.category.findMany({ select: { id: true, name: true } }),
+    prisma.category.findMany({ select: { id: true, name: true, slug: true } }),
   ]);
 
-  // Build category lookup map for semantic → DB category resolution
+  // Build category lookup maps for semantic → DB category resolution
   const categoryByName = new Map(allDbCategories.map((c) => [c.name.toLowerCase().trim(), c.id]));
+  const categorySlugById = new Map(allDbCategories.map((c) => [c.id, c.slug]));
 
   plog('feeds_loaded', { count: sources.length, sources: sources.map((s) => s.name) });
 
@@ -665,7 +666,8 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
       plog('article_generation_done', { title: generated.title.slice(0, 80), slug, status, articleId: article.id, resolvedCategory: resolvedCategoryName });
 
       if (settings.facebookAutoPost && generated.facebookPost && status === ArticleStatus.PUBLISHED) {
-        const articleUrl = `${SITE_URL}/article/${slug}`;
+        const resolvedCategorySlug = categorySlugById.get(resolvedCategoryId) ?? 'news';
+        const articleUrl = `${SITE_URL}/${resolvedCategorySlug}/${slug}`;
         const fbResult = await FacebookClient.publish({ content: generated.facebookPost, link: articleUrl });
 
         const socialPost = await prisma.socialPost.create({

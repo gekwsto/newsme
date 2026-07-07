@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { computeTagBoosts, type TagMatch } from './semantic-tag-matcher';
 
 const CONFIG_PATH = path.join(process.cwd(), 'config/semantic-matrix.json');
 
@@ -97,6 +98,8 @@ export interface CategoryBreakdown {
   finalScore: number;
   /** Set when a mustPassTagGroup was responsible for the minimum score floor. */
   mustPassGroup?: MustPassTrigger;
+  /** Score added by semantic-tag alias matching (from semantic-tags.json). */
+  tagBoost?: number;
 }
 
 export interface SemanticFilterResult {
@@ -113,6 +116,8 @@ export interface SemanticFilterResult {
    * Includes category name, group name, and the specific tags that triggered.
    */
   mustPassGroupTriggered: ({ category: string } & MustPassTrigger) | null;
+  /** Semantic tag alias matches from semantic-tags.json (debug trace). */
+  matchedSemanticTags?: TagMatch[];
 }
 
 // ─── Normalizer ────────────────────────────────────────────────────────────────
@@ -241,6 +246,35 @@ export function computeSemanticScore(
     });
   }
 
+  // ── Alias tag boosts from semantic-tags.json ──────────────────────────────────
+  const tagResult = computeTagBoosts({ title: input.title, excerpt: input.excerpt ?? '' });
+
+  for (const [catName, boost] of Object.entries(tagResult.categoryBoosts)) {
+    if (boost <= 0) continue;
+    const existing = categoryScores.find((c) => c.category === catName);
+    if (existing) {
+      existing.score += boost;
+      existing.breakdown.finalScore = existing.score;
+      existing.breakdown.tagBoost = (existing.breakdown.tagBoost ?? 0) + boost;
+    } else {
+      categoryScores.push({
+        category: catName,
+        score: boost,
+        matchedKeywords: [],
+        breakdown: {
+          category: catName,
+          contributions: [],
+          keywordsSubtotal: 0,
+          multiKeywordBonus: 0,
+          reliabilityMultiplier: 1.0,
+          weightMultiplier: 1.0,
+          finalScore: boost,
+          tagBoost: boost,
+        },
+      });
+    }
+  }
+
   // Sort by score desc
   categoryScores.sort((a, b) => b.score - a.score);
 
@@ -286,6 +320,15 @@ export function computeSemanticScore(
         : 'no hot keywords matched';
   }
 
+  // Log tag matches for debug visibility
+  if (tagResult.matchedTags.length > 0) {
+    console.log('[semantic] tag_boosts_applied', {
+      title: input.title.slice(0, 80),
+      tags: tagResult.matchedTags.map((t) => `${t.tag}(+${t.score}→${t.category})`).join(', '),
+      winner: best?.category ?? 'none',
+    });
+  }
+
   return {
     id: input.id,
     semanticScore,
@@ -296,6 +339,7 @@ export function computeSemanticScore(
     filteredReason,
     breakdown: categoryScores.map((c) => c.breakdown),
     mustPassGroupTriggered,
+    matchedSemanticTags: tagResult.matchedTags.length > 0 ? tagResult.matchedTags : undefined,
   };
 }
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import { markTrainingPublished, markTrainingRejected, markTrainingEdited } from '@/lib/training-capture';
 
@@ -136,6 +137,10 @@ export async function updateArticle(
   }
 ) {
   await requireAuth();
+
+  if (data.content !== undefined) {
+    data = { ...data, content: sanitizeHtml(data.content) };
+  }
 
   await prisma.article.update({ where: { id }, data });
 

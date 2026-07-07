@@ -220,6 +220,13 @@ export async function generateArticleContent(options: GenerateOptions): Promise<
 Δομή: το γεγονός (1-2 προτάσεις) + ερώτηση που αναγκάζει θέση ΓΙΑ ή ΚΑΤΑ.
 Η ερώτηση είναι πάντα συγκεκριμένη — "Ποια η άποψή σας;" αντικαθίσταται με πραγματική διχοτόμηση.
 
+━━━ TAGS ━━━
+
+Επιστρέφεις 8-12 tags ανά άρθρο. Κάθε tag είναι μια ακριβής, αναζητήσιμη λέξη ή φράση (1-4 λέξεις).
+Κάλυψε: κύριες οντότητες (εταιρείες, πρόσωπα, θεσμοί), θεματικό τομέα, γεωγραφία, τάσεις/events.
+Γράψε τα tags στην ίδια γλώσσα με το κείμενο (Ελληνικά για ελληνικά θέματα, Αγγλικά για διεθνή ονόματα).
+Απόφευγε γενικόλογα tags όπως "νέα", "ειδήσεις", "άρθρο".
+
 ━━━ HTML FORMAT ━━━
 
 Πρώτος στόχος: εξαιρετικό δημοσιογραφικό άρθρο.
@@ -246,7 +253,7 @@ export async function generateArticleContent(options: GenerateOptions): Promise<
   "seoDescription": "Max 155 χαρακτήρες",
   "facebookPost": "${options.generateFacebookPost ? 'Γεγονός + ερώτηση θέσης' : ''}",
   "imagePrompt": "Photorealistic news image description in English for DALL-E, no text in image",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "tags": ["κύρια οντότητα", "δεύτερη οντότητα", "θεματικός τομέας", "γεωγραφία", "τάση/event", "sector", "πρόσωπο/εταιρεία", "action keyword", "context keyword", "secondary topic"]
 }`;
 
   const isGreekSource = options.sourceLanguage === 'EL' || options.sourceCountry === 'GR';

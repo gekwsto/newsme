@@ -3,7 +3,7 @@ import type { Article, Category, Author } from '@/types';
 type PrismaCategory = { name: string; slug: string; color: string };
 type PrismaUser = { name: string };
 type PrismaTag = { tag: { name: string } };
-type PrismaDisplayAuthor = { name: string; slug: string } | null;
+type PrismaDisplayAuthor = { name: string; slug: string; isActive: boolean } | null;
 
 export interface PrismaArticleLike {
   id: string;
@@ -26,13 +26,13 @@ export interface PrismaArticleLike {
 /**
  * Single source of truth for article featured image resolution.
  * Returns null when no image exists — callers decide how to handle the absence.
- * Priority: generatedImageUrl → coverImage → null
+ * Priority: coverImage (manual/user-set) → generatedImageUrl (AI/pipeline) → null
  */
 export function resolveArticleImageUrl(
   generatedImageUrl: string | null | undefined,
   coverImage: string | null | undefined,
 ): string | null {
-  return generatedImageUrl ?? coverImage ?? null;
+  return coverImage ?? generatedImageUrl ?? null;
 }
 
 export function mapPrismaArticle(a: PrismaArticleLike): Article {
@@ -43,7 +43,7 @@ export function mapPrismaArticle(a: PrismaArticleLike): Article {
   };
 
   const author: Author = a.displayAuthor
-    ? { name: a.displayAuthor.name, slug: a.displayAuthor.slug }
+    ? { name: a.displayAuthor.name, slug: a.displayAuthor.isActive ? a.displayAuthor.slug : undefined }
     : { name: a.author.name };
 
   return {
@@ -80,6 +80,6 @@ export const ARTICLE_PUBLIC_SELECT = {
   createdAt: true,
   category: { select: { name: true, slug: true, color: true } },
   author: { select: { name: true } },
-  displayAuthor: { select: { name: true, slug: true } },
+  displayAuthor: { select: { name: true, slug: true, isActive: true } },
   tags: { include: { tag: { select: { name: true } } } },
 } as const;

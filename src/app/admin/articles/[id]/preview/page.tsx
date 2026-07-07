@@ -10,6 +10,7 @@ import AdminShell from '@/components/admin/AdminShell';
 import AICommentaryBox from '@/components/ui/AICommentaryBox';
 import { addHeadingIds } from '@/lib/toc';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { resolveArticleImageUrl } from '@/lib/article-mapper';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export default async function ArticlePreviewPage({
   if (!article) notFound();
 
   const contentWithIds = addHeadingIds(article.content);
+  const previewImageUrl = resolveArticleImageUrl(article.generatedImageUrl, article.coverImage);
 
   return (
     <AdminShell user={{ name: session.user.name, email: session.user.email, role: session.user.role }}>
@@ -112,14 +114,15 @@ export default async function ArticlePreviewPage({
         </div>
 
         {/* Cover image */}
-        {article.coverImage && (
+        {previewImageUrl && (
           <div className="relative aspect-[16/9] rounded-xl overflow-hidden my-6 shadow-md">
             <Image
-              src={article.coverImage}
+              src={previewImageUrl}
               alt={article.title}
               fill
               className="object-cover"
               sizes="768px"
+              unoptimized
             />
           </div>
         )}

@@ -16,13 +16,31 @@ async function requireAuth() {
   return session.user;
 }
 
+async function getArticleRoutes(articleId: string) {
+  const a = await prisma.article.findUnique({
+    where: { id: articleId },
+    select: { slug: true, status: true, category: { select: { slug: true } } },
+  });
+  return a;
+}
+
+function revalidateArticlePaths(articleId: string, a: { slug: string; status: string; category: { slug: string } } | null) {
+  revalidatePath(`/admin/articles/${articleId}/edit`);
+  revalidatePath(`/admin/articles/${articleId}/preview`);
+  if (a?.status === 'PUBLISHED') {
+    revalidatePath(`/${a.category.slug}/${a.slug}`);
+    revalidatePath(`/category/${a.category.slug}`);
+    revalidatePath('/');
+  }
+}
+
 export async function useRssImage(articleId: string): Promise<ImageActionResult> {
   try {
     await requireAuth();
 
     const article = await prisma.article.findUniqueOrThrow({
       where: { id: articleId },
-      select: { suggestedImageUrl: true },
+      select: { suggestedImageUrl: true, slug: true, status: true, category: { select: { slug: true } } },
     });
 
     if (!article.suggestedImageUrl) {
@@ -41,7 +59,7 @@ export async function useRssImage(articleId: string): Promise<ImageActionResult>
       },
     });
 
-    revalidatePath(`/admin/articles/${articleId}/edit`);
+    revalidateArticlePaths(articleId, article);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
@@ -56,8 +74,9 @@ export async function generateAiImage(articleId: string): Promise<GenerateResult
       where: { id: articleId },
       select: {
         title: true,
+        slug: true,
         status: true,
-        category: { select: { name: true } },
+        category: { select: { name: true, slug: true } },
         tags: { include: { tag: { select: { name: true } } } },
       },
     });
@@ -86,7 +105,7 @@ export async function generateAiImage(articleId: string): Promise<GenerateResult
       },
     });
 
-    revalidatePath(`/admin/articles/${articleId}/edit`);
+    revalidateArticlePaths(articleId, article);
     return { ok: true, url: result.url, cost: result.cost };
   } catch (err) {
     await prisma.article.update({
@@ -105,6 +124,8 @@ export async function setManualImage(
   try {
     await requireAuth();
 
+    const article = await getArticleRoutes(articleId);
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
@@ -118,7 +139,7 @@ export async function setManualImage(
       },
     });
 
-    revalidatePath(`/admin/articles/${articleId}/edit`);
+    revalidateArticlePaths(articleId, article);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
@@ -199,7 +220,8 @@ export async function selectPexelsImage(
   try {
     await requireAuth();
 
-    const attribution = `${photo.photographer} via Pexels`;
+    const article = await getArticleRoutes(articleId);
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
@@ -208,12 +230,12 @@ export async function selectPexelsImage(
         imageStatus: 'MANUAL_UPLOADED',
         imageSource: 'PEXELS',
         imageProvider: 'Pexels',
-        imageAttribution: attribution,
+        imageAttribution: `${photo.photographer} via Pexels`,
         imageCostEstimate: 0,
       },
     });
 
-    revalidatePath(`/admin/articles/${articleId}/edit`);
+    revalidateArticlePaths(articleId, article);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
@@ -223,6 +245,8 @@ export async function selectPexelsImage(
 export async function removeArticleImage(articleId: string): Promise<ImageActionResult> {
   try {
     await requireAuth();
+
+    const article = await getArticleRoutes(articleId);
 
     await prisma.article.update({
       where: { id: articleId },
@@ -237,7 +261,7 @@ export async function removeArticleImage(articleId: string): Promise<ImageAction
       },
     });
 
-    revalidatePath(`/admin/articles/${articleId}/edit`);
+    revalidateArticlePaths(articleId, article);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };

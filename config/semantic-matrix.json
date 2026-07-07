@@ -44,24 +44,24 @@
       ]
     },
     "Οικονομία": {
-      "weight": 1.5,
+      "weight": 1.2,
       "priorityEntities": [
         "bitcoin", "fed", "ecb", "imf", "world bank", "federal reserve",
         "ΟΠΕΚΑ", "ΕΦΚΑ", "ΑΣΕΠ", "ΑΑΔΕ", "ΕΝΦΙΑ"
       ],
       "keywords": [
-        "bitcoin", "ethereum", "crypto", "cryptocurrency", "blockchain",
+        "bitcoin", "ethereum", "crypto", "cryptocurrency",
         "stock market", "nasdaq", "s&p 500", "dow jones", "wall street",
         "inflation", "interest rates", "fed", "ecb", "federal reserve",
         "oil prices", "brent", "gold", "silver", "commodities",
-        "euro", "dollar", "yen", "pound", "currency", "forex",
-        "recession", "gdp", "growth", "unemployment", "jobs",
+        "euro", "dollar", "yen", "pound", "currency",
+        "recession", "gdp", "unemployment",
         "debt", "deficit", "budget", "fiscal", "monetary policy",
         "banks", "banking", "imf", "world bank", "bond", "yield",
-        "investment", "etf", "hedge fund", "pension", "tax",
-        "prices", "cost of living", "energy prices", "gas prices",
-        "supply chain", "trade war", "tariffs", "sanctions",
-        "markets", "rally", "crash", "correction", "bear market", "bull market",
+        "pension", "tax",
+        "cost of living", "energy prices", "gas prices",
+        "supply chain", "trade war", "tariffs",
+        "rally", "bear market", "bull market",
         "ΟΠΕΚΑ", "ΕΦΚΑ", "e-ΕΦΚΑ", "ΑΣΕΠ", "ΔΥΠΑ", "ΕΣΠΑ", "ΕΕΤΑΑ", "ΑΑΔΕ", "myAADE", "ΕΝΦΙΑ",
         "επίδομα", "συντάξεις", "αναδρομικά", "προσλήψεις", "μισθός",
         "φορολογία", "φόρος", "επενδύσεις", "ανάπτυξη", "τράπεζα"
@@ -95,7 +95,7 @@
       }
     },
     "Επιχειρηματικότητα": {
-      "weight": 1.1,
+      "weight": 1.2,
       "priorityEntities": [
         "series a", "series b", "ipo", "unicorn", "venture capital"
       ],
@@ -216,7 +216,7 @@
         "Netflix", "TikTok", "YouTube", "Instagram", "Spotify", "podcast",
         "σειρά", "ταινία", "streaming", "τηλεθέαση",
         "social media", "influencer", "content creator",
-        "ΕΡΤ", "ΑΝΤ1", "ΣΚΑΪ", "MEGA", "STAR", "Alpha",
+        "ΕΡΤ", "ΑΝΤ1", "ΣΚΑΪ", "MEGA", "STAR", "Alpha TV",
         "celebrity", "celebrities", "reality", "show",
         "διαφήμιση", "media", "press", "σειρές",
         "εκπομπή", "τηλεοπτική εκπομπή", "παρουσιαστής"

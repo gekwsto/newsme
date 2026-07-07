@@ -60,9 +60,11 @@ export async function updateAuthor(
   },
 ) {
   await requireAuth();
+  const current = await prisma.author.findUnique({ where: { id }, select: { slug: true } });
   await prisma.author.update({ where: { id }, data });
   revalidatePath('/admin/authors');
-  revalidatePath(`/authors/${data.slug ?? ''}`);
+  if (current?.slug) revalidatePath(`/authors/${current.slug}`);
+  if (data.slug && data.slug !== current?.slug) revalidatePath(`/authors/${data.slug}`);
 }
 
 export async function toggleAuthorActive(id: string, isActive: boolean) {
