@@ -7,7 +7,12 @@
     "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "semantic:import": "tsx scripts/import-semantic-config.ts",
+    "semantic:enrich": "tsx scripts/enrich-semantic-system.ts",
+    "semantic:validate": "tsx scripts/validate-semantic-b5.ts",
+    "semantic:audit": "tsx scripts/run-semantic-audit.ts",
+    "db:audit": "tsx scripts/db-taxonomy-audit.ts"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",

@@ -42,3 +42,20 @@ RUN mkdir -p ./public/uploads
 
 EXPOSE 3000
 CMD ["node", "server.js"]
+
+# ── Maintenance: one-off scripts (DB imports, enrichments, audits) ─────────────
+FROM base AS maintenance
+WORKDIR /app
+
+# All node_modules including devDeps (tsx, dotenv, prisma adapter)
+COPY --from=deps /app/node_modules ./node_modules
+# Scripts + config files they read at runtime
+COPY scripts/ ./scripts/
+COPY config/ ./config/
+COPY prisma/ ./prisma/
+# Pre-generated Prisma client — scripts import from src/generated/prisma
+COPY --from=builder /app/src/generated/ ./src/generated/
+# package.json so `npm run <script>` works
+COPY package.json ./
+
+CMD ["sh"]

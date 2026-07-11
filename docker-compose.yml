@@ -15,3 +15,12 @@ services:
       # Host path ./public/uploads is relative to this docker-compose.yml file.
       - ./public/uploads:/app/public/uploads
     restart: unless-stopped
+
+  maintenance:
+    build:
+      context: .
+      target: maintenance
+    env_file:
+      - .env
+    profiles:
+      - maintenance
