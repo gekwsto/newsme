@@ -1,20 +1,31 @@
 services:
-  app:
+  newsme-db:
+    image: postgres:16
+    container_name: newsme-db
+    restart: always
+    environment:
+      POSTGRES_DB: newsme
+      POSTGRES_USER: newsme_user
+      POSTGRES_PASSWORD: Kinsen123!
+    volumes:
+      - newsme_pgdata:/var/lib/postgresql/data
+
+  newsme-app:
     build:
       context: .
+      target: app
       args:
-        # Passed at build time so NEXT_PUBLIC_* is baked into the JS bundle.
-        # docker-compose reads this automatically from .env in the repo root.
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://newsme.gr}
-    ports:
-      - "3000:3000"
+    container_name: newsme-app
+    restart: always
     env_file:
       - .env
+    depends_on:
+      - newsme-db
+    ports:
+      - "3025:3000"
     volumes:
-      # Bind-mount the uploads directory so images survive container rebuilds.
-      # Host path ./public/uploads is relative to this docker-compose.yml file.
       - ./public/uploads:/app/public/uploads
-    restart: unless-stopped
 
   maintenance:
     build:
@@ -22,5 +33,10 @@ services:
       target: maintenance
     env_file:
       - .env
+    depends_on:
+      - newsme-db
     profiles:
       - maintenance
+
+volumes:
+  newsme_pgdata:
