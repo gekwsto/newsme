@@ -135,14 +135,16 @@ model Category {
   articles           Article[]
   rssSources         RssSource[]
   discoveredArticles DiscoveredArticle[]
+  semanticCategory   SemanticCategory?
 
   @@map("categories")
 }
 
 model Tag {
-  id       String       @id @default(cuid())
-  name     String       @unique
-  articles ArticleTag[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  articles    ArticleTag[]
+  semanticTag SemanticTag?
 
   @@map("tags")
 }
@@ -582,16 +584,17 @@ model ImageCategory {
 }
 
 model ImageTag {
-  id         String        @id @default(cuid())
-  name       String
-  slug       String
-  categoryId String
-  category   ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  name        String
+  slug        String
+  categoryId  String
+  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   /** JSON array of { keyword, aliases, isPriority } — keyword templates applied to all images with this tag */
-  keywords   Json          @default("[]")
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  assets     ImageAsset[]
+  keywords    Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assets      ImageAsset[]
+  semanticTag SemanticTag?
 
   @@unique([slug, categoryId])
   @@map("image_tags")
@@ -818,6 +821,7 @@ model PipelineRun {
   errorMessage          String?           @db.Text
 
   items                 PipelineRunItem[]
+  shadowResults         ShadowSemanticResult[]
 
   @@index([startedAt(sort: Desc)])
   @@map("pipeline_runs")
@@ -851,4 +855,160 @@ model PipelineRunItem {
 
   @@index([runId])
   @@map("pipeline_run_items")
+}
+
+// ─── Semantic System ───────────────────────────────────────────────────────────
+
+/**
+ * SemanticCategory: mirrors the 11 categories in semantic-matrix.json.
+ * Optional link to an existing article Category (for pipeline category assignment).
+ */
+model SemanticCategory {
+  id         String        @id @default(cuid())
+  name       String        @unique  // "Ελλάδα", "AI" etc.
+  slug       String        @unique  // "ellada", "ai" etc.
+  weight     Float         @default(1.0)
+  isActive   Boolean       @default(true)
+
+  // Optional 1-to-1 link to the public article Category
+  categoryId String?       @unique
+  category   Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags       SemanticTag[]
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("semantic_categories")
+}
+
+/**
+ * SemanticTag: canonical semantic concept (e.g. "Πυρκαγιά").
+ * Matched via aliases. Contributes a single bounded score to its category.
+ */
+model SemanticTag {
+  id                    String           @id @default(cuid())
+  name                  String           @unique  // "Πυρκαγιά"
+  slug                  String           @unique  // "pyrkagia"
+  semanticCategoryId    String
+  semanticCategory      SemanticCategory @relation(fields: [semanticCategoryId], references: [id])
+
+  weight                Float            @default(1.0)
+  // Points added when this tag matches AND isPriority is true
+  bonus                 Int              @default(0)
+  isPriority            Boolean          @default(false)
+  isActive              Boolean          @default(true)
+
+  // Controls what downstream systems use this tag for
+  useForArticleTagging  Boolean          @default(true)
+  useForImageMatching   Boolean          @default(true)
+  useForRelatedArticles Boolean          @default(false)
+
+  // Optional 1-to-1 mapping to existing article Tag
+  tagId                 String?          @unique
+  tag                   Tag?             @relation(fields: [tagId], references: [id], onDelete: SetNull)
+
+  // Optional 1-to-1 mapping to existing ImageTag
+  imageTagId            String?          @unique
+  imageTag              ImageTag?        @relation(fields: [imageTagId], references: [id], onDelete: SetNull)
+
+  aliases               SemanticTagAlias[]
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  @@index([semanticCategoryId, isActive])
+  @@map("semantic_tags")
+}
+
+/**
+ * SemanticTagAlias: a surface form (e.g. "φωτιά", "112", "εκκένωση")
+ * that maps to a canonical SemanticTag.
+ */
+model SemanticTagAlias {
+  id            String      @id @default(cuid())
+  semanticTagId String
+  semanticTag   SemanticTag @relation(fields: [semanticTagId], references: [id], onDelete: Cascade)
+
+  alias         String
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+
+  @@unique([semanticTagId, alias])
+  @@index([alias])  // fast lookup: given alias text, find its tag
+  @@map("semantic_tag_aliases")
+}
+
+/**
+ * Versioned snapshots of the full semantic configuration.
+ * Created automatically on each import or significant change.
+ */
+model SemanticConfigVersion {
+  id          String   @id @default(cuid())
+  version     Int      @unique
+  description String?
+  snapshot    Json     // full config at time of snapshot
+  isActive    Boolean  @default(false)
+  createdBy   String?  // admin user id or "import"
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@map("semantic_config_versions")
+}
+
+/**
+ * Audit trail for all admin changes to the semantic system.
+ */
+// ─── Shadow Semantic Mode ─────────────────────────────────────────────────────
+// One row per pipeline article scored by BOTH the OLD and NEW systems.
+// OLD system remains the production source of truth; this is read-only comparison.
+
+model ShadowSemanticResult {
+  id            String      @id @default(cuid())
+
+  pipelineRunId String
+  pipelineRun   PipelineRun @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
+
+  rssUrl        String
+  rssTitle      String      @db.Text
+
+  // OLD system (JSON-based, production)
+  oldCategory   String?
+  oldScore      Float
+  oldPassed     Boolean
+
+  // NEW system (DB-backed, shadow)
+  newCategory   String?
+  newScore      Int
+  newPassed     Boolean
+  newMatchedTags Json       // MatchedTag[] — tag name, category, score, aliases
+  zeroMatch     Boolean     // true if NEW matched no canonical tags at all
+
+  // Comparison flags
+  categoryAgree Boolean
+  passAgree     Boolean
+  disagreement  Boolean
+  disagreementReason String? @db.Text
+
+  createdAt     DateTime    @default(now())
+
+  @@index([pipelineRunId])
+  @@index([disagreement])
+  @@index([createdAt(sort: Desc)])
+  @@map("shadow_semantic_results")
+}
+
+model SemanticAuditLog {
+  id         String   @id @default(cuid())
+  entityType String   // "SemanticCategory" | "SemanticTag" | "SemanticTagAlias"
+  entityId   String
+  action     String   // "create" | "update" | "deactivate" | "import"
+  before     Json?
+  after      Json?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("semantic_audit_logs")
 }

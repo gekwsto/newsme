@@ -6,6 +6,7 @@ import { FileText, Edit, Eye, Users, FilePlus } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { formatRelativeDate } from '@/lib/utils';
+import { resolveArticleImageSource } from '@/lib/article-mapper';
 import { ArticleStatus, ArticleType, SourceType } from '@/generated/prisma/enums';
 import AdminShell from '@/components/admin/AdminShell';
 import ApprovalActions from '../approvals/ApprovalActions';
@@ -53,6 +54,11 @@ export default async function ArticlesPage({
         slug: true,
         status: true,
         sourceType: true,
+        imageStatus: true,
+        imageSource: true,
+        imageProvider: true,
+        coverImage: true,
+        generatedImageUrl: true,
         updatedAt: true,
         views: true,
         qualityScore: true,
@@ -139,6 +145,7 @@ export default async function ArticlesPage({
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">Ποιότητα</th>
                     )}
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">Κατάσταση</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden md:table-cell">Εικόνα</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">
                       <span className="flex items-center gap-1"><Users size={12} />Views</span>
                     </th>
@@ -197,6 +204,22 @@ export default async function ArticlesPage({
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.classes}`}>
                             {badge.label}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {(() => {
+                            const src = resolveArticleImageSource(article.imageStatus, article.imageSource, article.imageProvider, article.coverImage, article.generatedImageUrl);
+                            const imgBadge = {
+                              RSS:   'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+                              PEXELS:'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                              AI:    'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                              'N/A': 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500',
+                            }[src];
+                            return (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${imgBadge}`}>
+                                {src}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-xs font-medium text-slate-600 dark:text-slate-300">

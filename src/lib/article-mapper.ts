@@ -23,6 +23,28 @@ export interface PrismaArticleLike {
   tags?: PrismaTag[];
 }
 
+export function resolveArticleImageSource(
+  imageStatus: string | null | undefined,
+  imageSource: string | null | undefined,
+  imageProvider: string | null | undefined,
+  coverImage: string | null | undefined,
+  generatedImageUrl: string | null | undefined,
+): 'RSS' | 'PEXELS' | 'AI' | 'N/A' {
+  // Explicit enum signals (pipeline sets these; most reliable)
+  if (imageStatus === 'RSS_AVAILABLE') return 'RSS';
+  if (imageStatus === 'AI_GENERATED') return 'AI';
+  if (imageStatus === 'GENERATED') return 'PEXELS';
+
+  // Field-level fallbacks for older articles where imageStatus = NONE despite having images.
+  // generatedImageUrl is only ever set by the library (Pexels) image selection path.
+  // coverImage alone (without generatedImageUrl) signals an RSS-sourced image.
+  if (imageSource === 'LIBRARY' || imageProvider === 'Library') return 'PEXELS';
+  if (generatedImageUrl) return 'PEXELS';
+  if (coverImage) return 'RSS';
+
+  return 'N/A';
+}
+
 /**
  * Single source of truth for article featured image resolution.
  * Returns null when no image exists — callers decide how to handle the absence.

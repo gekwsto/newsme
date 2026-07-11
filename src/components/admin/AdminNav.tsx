@@ -44,6 +44,8 @@ const navItems = [
   { href: '/admin/ai-generator', label: 'AI Generator', icon: Sparkles, exact: false },
   { href: '/admin/news-discovery', label: 'Discovery', icon: Newspaper, exact: false },
   { href: '/admin/semantic-matrix', label: 'Semantic Matrix', icon: Brain, exact: false },
+  { href: '/admin/semantic-system', label: 'Semantic System', icon: Brain, exact: false },
+  { href: '/admin/semantic-system/shadow', label: 'Shadow Mode', icon: Activity, exact: false },
   { href: '/admin/sources', label: 'RSS Sources', icon: Rss, exact: false },
   { href: '/admin/news-settings', label: 'Auto Pipeline', icon: Workflow, exact: false },
   { href: '/admin/pipeline-logs', label: 'Pipeline Logs', icon: Activity, exact: false },

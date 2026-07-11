@@ -12,6 +12,7 @@ import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, PipelineRunS
 import { captureTrainingExample } from '@/lib/training-capture';
 import { selectFeaturedImage } from '@/lib/images/select-featured-image';
 import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
+import { runShadowBatch } from '@/lib/semantic-shadow';
 
 const MODEL = 'gpt-5-mini';
 const FEED_TIMEOUT_MS = 12_000;
@@ -388,6 +389,22 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
     )
   );
 
+  // ── 4b. Shadow: run NEW DB semantic system (read-only, never affects output) ─
+  // Fire before article generation loop so it runs concurrently with the slow AI calls.
+  const shadowPromise = runShadowBatch(
+    semanticScored.map(({ item, semanticResult }) => ({
+      pipelineRunId: pipelineRun.id,
+      rssUrl: item.url,
+      rssTitle: item.title,
+      rssExcerpt: item.excerpt,
+      oldCategory: semanticResult.assignedCategory ?? null,
+      oldScore: semanticResult.semanticScore,
+      oldPassed: semanticResult.passedSemanticFilter,
+    }))
+  ).catch((err) => {
+    plog('shadow_error', { error: err instanceof Error ? err.message : String(err) });
+  });
+
   plog('compound_scoring_done', {
     input: semanticPassed.length,
     passed: qualifiedItems.length,
@@ -405,6 +422,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
   });
 
   if (qualifiedItems.length === 0) {
+    await shadowPromise; // collect shadow data before returning
     await finishRun({ status: PipelineRunStatus.COMPLETED, reason: `No items passed compound score threshold (${compoundThreshold})`, compoundRejected });
     return {
       ok: true,
@@ -703,6 +721,9 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
       }).catch(() => {});
     }
   }
+
+  // Collect shadow results before the function returns
+  await shadowPromise;
 
   const failedGenerations = qualifiedItems.length - articlesGenerated;
   await finishRun({
