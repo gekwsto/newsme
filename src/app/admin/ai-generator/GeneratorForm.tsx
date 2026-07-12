@@ -154,7 +154,7 @@ export default function GeneratorForm({ categories }: Props) {
       </div>
 
       {/* Tone + Article Type row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ύφος</label>
           <select
@@ -184,7 +184,7 @@ export default function GeneratorForm({ categories }: Props) {
       {/* Target Length */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Μήκος Άρθρου</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {TARGET_LENGTHS.map((l) => (
             <button
               key={l}

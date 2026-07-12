@@ -123,7 +123,7 @@ export default async function SourcesPage({ searchParams }: PageProps) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Συνολικές Πηγές</p>
             <p className="text-2xl font-black text-slate-900 dark:text-white">{sources.length}</p>

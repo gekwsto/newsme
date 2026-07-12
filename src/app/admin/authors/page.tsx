@@ -41,6 +41,7 @@ export default async function AdminAuthorsPage() {
           {authors.length === 0 ? (
             <p className="p-6 text-slate-400 text-sm">Δεν υπάρχουν ακόμα authors.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
@@ -94,6 +95,7 @@ export default async function AdminAuthorsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

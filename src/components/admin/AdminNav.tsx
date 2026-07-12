@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -28,6 +29,8 @@ import {
   GraduationCap,
   Users,
   Tag,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +69,20 @@ const navItems = [
 
 export default function AdminNav({ user }: AdminNavProps) {
   const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Close drawer on route change
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  // Body scroll lock while drawer is open
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
 
   const isActive = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -125,36 +142,99 @@ export default function AdminNav({ user }: AdminNavProps) {
       </aside>
 
       {/* Top bar — mobile */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-40 bg-slate-900 border-b border-slate-800 px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-black text-sm tracking-widest">
+      <header
+        className="lg:hidden fixed top-0 inset-x-0 z-40 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 h-14"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <Link href="/" className="font-black text-sm tracking-widest shrink-0">
           <span className="text-red-500">ΑΙ</span>
           <span className="text-white">ΣΧΟΛΙΑΣΜΟΣ</span>
         </Link>
-        <nav className="flex items-center gap-1">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Άνοιγμα μενού"
+          className="p-2.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+        >
+          <Menu size={22} />
+        </button>
+      </header>
+
+      {/* Backdrop — closes drawer on tap */}
+      {drawerOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <div
+        className={cn(
+          'lg:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out',
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {/* Drawer header */}
+        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+          <Link href="/" className="inline-flex flex-col leading-none">
+            <span className="font-black text-base tracking-widest">
+              <span className="text-red-500">ΑΙ</span>
+              <span className="text-white">ΣΧΟΛΙΑΣΜΟΣ</span>
+            </span>
+            <span className="text-slate-500 text-[9px] tracking-widest mt-0.5">ADMIN PANEL</span>
+          </Link>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Κλείσιμο μενού"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Nav items — scrollable */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon, exact }) => (
             <Link
               key={href}
               href={href}
-              title={label}
               className={cn(
-                'p-2 rounded-lg transition-colors',
+                'flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors',
                 isActive(href, exact)
-                  ? 'text-red-400 bg-red-600/10'
+                  ? 'bg-red-600/20 text-red-400 border border-red-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               )}
             >
-              <Icon size={18} />
+              <Icon size={16} />
+              {label}
+              {isActive(href, exact) && <ChevronRight size={14} className="ml-auto" />}
             </Link>
           ))}
+        </nav>
+
+        {/* User + logout */}
+        <div className="px-3 py-4 border-t border-slate-800 shrink-0">
+          <div className="px-3 py-2 mb-2">
+            <p className="text-white text-sm font-semibold truncate">{user.name}</p>
+            <p className="text-slate-500 text-xs truncate">{user.email}</p>
+            <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider text-violet-400 bg-violet-900/30 px-2 py-0.5 rounded-full">
+              {user.role}
+            </span>
+          </div>
           <button
             onClick={() => signOut({ callbackUrl: '/admin/login' })}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title="Αποσύνδεση"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
+            Αποσύνδεση
           </button>
-        </nav>
-      </header>
+        </div>
+      </div>
     </>
   );
 }

@@ -76,7 +76,7 @@ export default async function PublishingQueuePage() {
 
   return (
     <AdminShell user={{ name: session.user.name, email: session.user.email, role: session.user.role }}>
-      <div className="max-w-5xl">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100">Publishing Queue</h1>
           <p className="text-slate-400 text-sm mt-1">

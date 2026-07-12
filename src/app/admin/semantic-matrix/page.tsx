@@ -145,7 +145,7 @@ export default async function SemanticMatrixPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
             Ρυθμίσεις / Thresholds
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
               <p className="text-xs text-slate-500">Min Semantic Score</p>
               <p className="mt-1 text-2xl font-bold text-violet-600 dark:text-violet-400">
