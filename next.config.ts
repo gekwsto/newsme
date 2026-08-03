@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: '**' },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/ai-policy',
+        destination: '/editorial-policy',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

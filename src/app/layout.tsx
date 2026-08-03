@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND.name}`,
   },
   description: BRAND.description,
-  keywords: ['AI', 'τεχνολογία', 'οικονομία', 'ειδήσεις', 'Ελλάδα', 'επιχειρηματικότητα'],
+  keywords: ['τεχνολογία', 'οικονομία', 'ειδήσεις', 'Ελλάδα', 'επιχειρηματικότητα'],
   authors: [{ name: BRAND.author, url: BRAND.domain }],
   openGraph: {
     type: 'website',

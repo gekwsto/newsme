@@ -7,7 +7,6 @@ const PAGES = [
   `${SITE_URL}/about`,
   `${SITE_URL}/contact`,
   `${SITE_URL}/editorial-policy`,
-  `${SITE_URL}/ai-policy`,
   `${SITE_URL}/transparency`,
   `${SITE_URL}/privacy-policy`,
   `${SITE_URL}/terms`,
