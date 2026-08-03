@@ -3,15 +3,24 @@ import path from 'path';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+
   turbopack: {
     root: path.resolve(__dirname),
   },
+
+  experimental: {
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 1000,
+    staticGenerationRetryCount: 1,
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: '**' },
     ],
   },
+
   async redirects() {
     return [
       {
@@ -21,11 +30,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
   async headers() {
     return [
       {
-        // Service Worker must never be cached — browsers must always
-        // re-fetch it to pick up updates immediately.
         source: '/sw.js',
         headers: [
           { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
