@@ -37,3 +37,18 @@ export const BRAND = {
   founders: ['Newsme Editorial Team'] as string[],
   addressLocality: 'Athens',
 } as const;
+
+/**
+ * Optional publication transparency fields.
+ * Leave undefined until you have real, verified values to fill in.
+ * The About page will silently omit any field that is undefined or empty.
+ */
+export const BRAND_TRANSPARENCY: {
+  publisherLegalName?: string;
+  publisherAddress?: string;
+  editorialContactEmail?: string;
+  correctionsEmail?: string;
+} = {
+  editorialContactEmail: 'editorial@newsme.gr',
+  correctionsEmail: 'corrections@newsme.gr',
+};

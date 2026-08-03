@@ -92,6 +92,14 @@ enum PipelineRunStatus {
   SKIPPED
 }
 
+enum PushCampaignStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  PARTIALLY_FAILED
+  FAILED
+}
+
 enum ImageStatus {
   NONE
   PENDING
@@ -996,6 +1004,50 @@ model ShadowSemanticResult {
   @@index([disagreement])
   @@index([createdAt(sort: Desc)])
   @@map("shadow_semantic_results")
+}
+
+// ─── Web Push ─────────────────────────────────────────────────────────────────
+
+model PushSubscription {
+  id            String    @id @default(cuid())
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  platform      String?
+  deviceType    String?
+  isActive      Boolean   @default(true)
+  isTestDevice  Boolean   @default(false)
+  failureCount  Int       @default(0)
+  lastSuccessAt DateTime?
+  lastFailureAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+model PushCampaign {
+  id            String             @id @default(cuid())
+  title         String
+  body          String
+  targetUrl     String
+  imageUrl      String?
+  articleId     String?
+  status        PushCampaignStatus @default(DRAFT)
+  totalTargeted Int                @default(0)
+  sentCount     Int                @default(0)
+  failedCount   Int                @default(0)
+  clickedCount  Int                @default(0)
+  createdAt     DateTime           @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("push_campaigns")
 }
 
 model SemanticAuditLog {

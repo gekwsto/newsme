@@ -4,6 +4,8 @@ import './globals.css';
 import HeaderWrapper from '@/components/layout/HeaderWrapper';
 import Footer from '@/components/layout/Footer';
 import ThemeProvider from '@/components/ThemeProvider';
+import ServiceWorkerRegistration from '@/components/push/ServiceWorkerRegistration';
+import PushNotificationControl from '@/components/push/PushNotificationControl';
 import { BRAND } from '@/config/brand';
 import { SITE } from '@/config/site';
 import { organizationJsonLd } from '@/lib/seo';
@@ -67,9 +69,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
         />
         <ThemeProvider>
+          <ServiceWorkerRegistration />
           <HeaderWrapper />
           <main className="min-h-screen">{children}</main>
           <Footer />
+          <PushNotificationControl />
         </ThemeProvider>
       </body>
     </html>

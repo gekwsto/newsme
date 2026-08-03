@@ -29,6 +29,7 @@ import {
   GraduationCap,
   Users,
   Tag,
+  Bell,
   Menu,
   X,
 } from 'lucide-react';
@@ -55,6 +56,7 @@ const navItems = [
   { href: '/admin/image-library', label: 'Image Library', icon: Images, exact: false },
   { href: '/admin/image-library/taxonomy', label: 'Image Taxonomy', icon: Tag, exact: false },
   { href: '/admin/image-settings', label: 'Image Settings', icon: ImageIcon, exact: false },
+  { href: '/admin/push-notifications', label: 'Push', icon: Bell, exact: false },
   { href: '/admin/social-posts', label: 'Social Posts', icon: MessageSquare, exact: false },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart2, exact: false },
   { href: '/admin/operations', label: 'Operations', icon: Settings, exact: false },

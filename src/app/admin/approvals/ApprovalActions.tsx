@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Check, X, Globe, Loader2 } from 'lucide-react';
+import { Check, X, Globe, Loader2, Bell } from 'lucide-react';
 import { approveArticle, rejectArticle, publishArticle } from '@/actions/articles';
 
 interface ApprovalActionsProps {
@@ -12,11 +12,13 @@ interface ApprovalActionsProps {
 export default function ApprovalActions({ articleId, showPublish = false }: ApprovalActionsProps) {
   const [isPending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+  const [doneMsg, setDoneMsg] = useState('Ολοκληρώθηκε');
   const [rejectNote, setRejectNote] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [sendPush, setSendPush] = useState(false);
 
   if (done) {
-    return <span className="text-xs text-slate-400 italic">Ολοκληρώθηκε</span>;
+    return <span className="text-xs text-slate-400 italic">{doneMsg}</span>;
   }
 
   const handle = (action: () => Promise<void>) => {
@@ -26,16 +28,56 @@ export default function ApprovalActions({ articleId, showPublish = false }: Appr
     });
   };
 
+  const handlePublishWithPush = () => {
+    startTransition(async () => {
+      await publishArticle(articleId);
+
+      if (sendPush) {
+        try {
+          const res = await fetch('/api/admin/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ articleId }),
+          });
+          const data = await res.json() as { ok: boolean; sentCount?: number; totalTargeted?: number };
+          if (data.ok && data.totalTargeted && data.totalTargeted > 0) {
+            setDoneMsg(`Δημοσιεύτηκε + push σε ${data.sentCount}/${data.totalTargeted}`);
+          } else if (data.ok && (!data.totalTargeted || data.totalTargeted === 0)) {
+            setDoneMsg('Δημοσιεύτηκε (0 subscribers)');
+          } else {
+            setDoneMsg('Δημοσιεύτηκε (push απέτυχε)');
+          }
+        } catch {
+          setDoneMsg('Δημοσιεύτηκε (push απέτυχε)');
+        }
+      }
+
+      setDone(true);
+    });
+  };
+
   if (showPublish) {
     return (
-      <button
-        onClick={() => handle(() => publishArticle(articleId))}
-        disabled={isPending}
-        className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50"
-      >
-        {isPending ? <Loader2 size={11} className="animate-spin" /> : <Globe size={11} />}
-        Δημοσίευση
-      </button>
+      <div className="flex flex-col gap-1.5">
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={sendPush}
+            onChange={(e) => setSendPush(e.target.checked)}
+            className="rounded border-slate-300 text-red-600 focus:ring-red-500 w-3 h-3"
+          />
+          <Bell size={10} className={sendPush ? 'text-red-500' : 'text-slate-400'} />
+          Push
+        </label>
+        <button
+          onClick={handlePublishWithPush}
+          disabled={isPending}
+          className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50"
+        >
+          {isPending ? <Loader2 size={11} className="animate-spin" /> : <Globe size={11} />}
+          Δημοσίευση
+        </button>
+      </div>
     );
   }
 
