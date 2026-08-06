@@ -1,5 +1,6 @@
 export const BRAND = {
   name: 'NewsMe',
+  seoName: 'newsme.gr',
   shortName: 'NewsMe',
   tagline: 'Η καθημερινή ενημέρωση με αξιοπιστία.',
   description: 'Η καθημερινή ενημέρωση με αξιοπιστία.',

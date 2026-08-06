@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { generateArticleImage } from '@/lib/images/image-provider';
 import { searchPexelsImages, searchPexelsWithFallback, type PexelsPhoto } from '@/lib/images/pexels-provider';
 import { buildSmartImageQuery } from '@/lib/images/smart-query';
+import { downloadAndStoreImage } from '@/lib/images/download-and-store';
 
 type ImageActionResult = { ok: true } | { ok: false; error: string };
 type GenerateResult = { ok: true; url: string; cost: number } | { ok: false; error: string };
@@ -40,22 +41,48 @@ export async function useRssImage(articleId: string): Promise<ImageActionResult>
 
     const article = await prisma.article.findUniqueOrThrow({
       where: { id: articleId },
-      select: { suggestedImageUrl: true, slug: true, status: true, category: { select: { slug: true } } },
+      select: {
+        suggestedImageUrl: true,
+        slug: true,
+        status: true,
+        category: { select: { slug: true } },
+      },
     });
 
     if (!article.suggestedImageUrl) {
       return { ok: false, error: 'Δεν υπάρχει RSS εικόνα' };
     }
 
+    const dlResult = await downloadAndStoreImage({
+      sourceUrl: article.suggestedImageUrl,
+      articleSlug: article.slug,
+      articleId,
+      sourceName: 'RSS',
+    });
+
+    if (!dlResult.success) {
+      return { ok: false, error: `Αποτυχία λήψης εικόνας: ${dlResult.error}` };
+    }
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
-        coverImage: article.suggestedImageUrl,
-        generatedImageUrl: article.suggestedImageUrl,
+        coverImage: dlResult.publicUrl,
+        generatedImageUrl: dlResult.publicUrl,
+        originalImageUrl: article.suggestedImageUrl,
+        localImagePath: dlResult.localPath ?? null,
         imageStatus: 'RSS_SELECTED',
         imageSource: 'RSS',
         imageProvider: 'rss',
         imageCostEstimate: 0,
+        imageDownloadStatus: 'SUCCESS',
+        imageDownloadedAt: new Date(),
+        imageMimeType: dlResult.mimeType ?? null,
+        imageWidth: dlResult.width ?? null,
+        imageHeight: dlResult.height ?? null,
+        imageFileSize: dlResult.fileSize ?? null,
+        imageChecksum: dlResult.checksum ?? null,
+        imageDownloadError: null,
       },
     });
 
@@ -93,20 +120,44 @@ export async function generateAiImage(articleId: string): Promise<GenerateResult
     const tags = article.tags.map((t) => t.tag.name);
     const result = await generateArticleImage(article.title, article.category.name, tags);
 
+    // Download and persist the AI-generated image immediately (OpenAI URLs expire in ~1h)
+    const dlResult = await downloadAndStoreImage({
+      sourceUrl: result.url,
+      articleSlug: article.slug,
+      articleId,
+      sourceName: 'AI',
+    });
+
+    // Never store the external OpenAI URL (expires in ~1h). On download failure, leave coverImage null.
+    const finalUrl = dlResult.success ? dlResult.publicUrl! : null;
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
-        coverImage: result.url,
-        generatedImageUrl: result.url,
+        coverImage: finalUrl,
+        generatedImageUrl: finalUrl,
+        originalImageUrl: result.url,
+        localImagePath: dlResult.localPath ?? null,
         imageStatus: 'AI_GENERATED',
         imageSource: 'AI',
         imageProvider: result.model,
         imageCostEstimate: result.cost,
+        imageDownloadStatus: dlResult.success ? 'SUCCESS' : 'FAILED',
+        imageDownloadedAt: dlResult.success ? new Date() : null,
+        imageMimeType: dlResult.mimeType ?? null,
+        imageWidth: dlResult.width ?? null,
+        imageHeight: dlResult.height ?? null,
+        imageFileSize: dlResult.fileSize ?? null,
+        imageChecksum: dlResult.checksum ?? null,
+        imageDownloadError: dlResult.success ? null : (dlResult.error ?? null),
       },
     });
 
     revalidateArticlePaths(articleId, article);
-    return { ok: true, url: result.url, cost: result.cost };
+    if (!dlResult.success) {
+      return { ok: false, error: `Η εικόνα παράχθηκε αλλά η αποθήκευση απέτυχε: ${dlResult.error}` };
+    }
+    return { ok: true, url: finalUrl!, cost: result.cost };
   } catch (err) {
     await prisma.article.update({
       where: { id: articleId },
@@ -126,16 +177,37 @@ export async function setManualImage(
 
     const article = await getArticleRoutes(articleId);
 
+    const dlResult = await downloadAndStoreImage({
+      sourceUrl: url,
+      articleSlug: article?.slug,
+      articleId,
+      sourceName: 'MANUAL',
+    });
+
+    if (!dlResult.success) {
+      return { ok: false, error: `Αποτυχία λήψης εικόνας: ${dlResult.error}` };
+    }
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
-        coverImage: url,
-        generatedImageUrl: url,
+        coverImage: dlResult.publicUrl,
+        generatedImageUrl: dlResult.publicUrl,
+        originalImageUrl: url,
+        localImagePath: dlResult.localPath ?? null,
         imageStatus: 'MANUAL_UPLOADED',
         imageSource: 'MANUAL',
         imageProvider: 'manual',
         imageAttribution: attribution || null,
         imageCostEstimate: 0,
+        imageDownloadStatus: 'SUCCESS',
+        imageDownloadedAt: new Date(),
+        imageMimeType: dlResult.mimeType ?? null,
+        imageWidth: dlResult.width ?? null,
+        imageHeight: dlResult.height ?? null,
+        imageFileSize: dlResult.fileSize ?? null,
+        imageChecksum: dlResult.checksum ?? null,
+        imageDownloadError: null,
       },
     });
 
@@ -222,16 +294,37 @@ export async function selectPexelsImage(
 
     const article = await getArticleRoutes(articleId);
 
+    const dlResult = await downloadAndStoreImage({
+      sourceUrl: photo.imageUrl,
+      articleSlug: article?.slug,
+      articleId,
+      sourceName: 'PEXELS',
+    });
+
+    if (!dlResult.success) {
+      return { ok: false, error: `Αποτυχία λήψης εικόνας Pexels: ${dlResult.error}` };
+    }
+
     await prisma.article.update({
       where: { id: articleId },
       data: {
-        coverImage: photo.imageUrl,
-        generatedImageUrl: photo.imageUrl,
+        coverImage: dlResult.publicUrl,
+        generatedImageUrl: dlResult.publicUrl,
+        originalImageUrl: photo.imageUrl,
+        localImagePath: dlResult.localPath ?? null,
         imageStatus: 'MANUAL_UPLOADED',
         imageSource: 'PEXELS',
         imageProvider: 'Pexels',
         imageAttribution: `${photo.photographer} via Pexels`,
         imageCostEstimate: 0,
+        imageDownloadStatus: 'SUCCESS',
+        imageDownloadedAt: new Date(),
+        imageMimeType: dlResult.mimeType ?? null,
+        imageWidth: dlResult.width ?? null,
+        imageHeight: dlResult.height ?? null,
+        imageFileSize: dlResult.fileSize ?? null,
+        imageChecksum: dlResult.checksum ?? null,
+        imageDownloadError: null,
       },
     });
 
@@ -253,11 +346,13 @@ export async function removeArticleImage(articleId: string): Promise<ImageAction
       data: {
         coverImage: null,
         generatedImageUrl: null,
+        originalImageUrl: null,
         imageStatus: 'NONE',
         imageSource: null,
         imageProvider: null,
         imageAttribution: null,
         imageCostEstimate: null,
+        // Preserve download metadata for audit; do NOT delete local file
       },
     });
 

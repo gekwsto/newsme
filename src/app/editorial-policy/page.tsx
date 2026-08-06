@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: `Συντακτική Πολιτική | ${BRAND.name}`,
     description: PAGE_DESCRIPTION,
     url: canonicalUrl('/editorial-policy'),
-    siteName: BRAND.name,
+    siteName: BRAND.seoName,
     images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: BRAND.name }],
     locale: SITE.locale,
     type: 'website',

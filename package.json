@@ -13,6 +13,9 @@
     "semantic:validate": "tsx scripts/validate-semantic-b5.ts",
     "semantic:audit": "tsx scripts/run-semantic-audit.ts",
     "db:audit": "tsx scripts/db-taxonomy-audit.ts",
+    "images:backfill": "tsx scripts/backfill-local-article-images.ts",
+    "images:audit": "tsx scripts/audit-local-article-images.ts",
+    "images:test-e2e": "tsx scripts/test-image-e2e.ts",
     "test": "jest"
   },
   "dependencies": {
@@ -33,6 +36,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "rss-parser": "^3.13.0",
+    "sharp": "^0.35.3",
     "tailwind-merge": "^3.6.0",
     "web-push": "^3.6.7",
     "zod": "^4.4.3"

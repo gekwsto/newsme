@@ -1,5 +1,5 @@
 /**
- * Newsme.gr — Service Worker
+ * newsme.gr — Service Worker
  * Handles Web Push notifications and notification click events.
  * No aggressive caching — this SW is push-only.
  */
@@ -24,14 +24,14 @@ self.addEventListener('push', (event) => {
       data = event.data.json();
     } catch {
       data = {
-        title: 'Newsme.gr',
+        title: 'newsme.gr',
         body: event.data.text() || 'Νέα ειδοποίηση',
         url: '/',
       };
     }
   }
 
-  const title = String(data.title || 'Newsme.gr').slice(0, 100);
+  const title = String(data.title || 'newsme.gr').slice(0, 100);
   const body = String(data.body || '').slice(0, 200);
   const url = validateSameOriginUrl(data.url) || '/';
   const icon = data.icon || '/og-default.jpg';

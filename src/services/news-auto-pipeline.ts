@@ -11,6 +11,7 @@ import { SITE_URL } from '@/lib/seo';
 import { ArticleStatus, ArticleType, DiscoveredStatus, ImageStatus, PipelineRunStatus, SocialPostStatus, SourceType, TrainingDataType } from '@/generated/prisma/enums';
 import { captureTrainingExample } from '@/lib/training-capture';
 import { selectFeaturedImage } from '@/lib/images/select-featured-image';
+import { downloadAndStoreImage } from '@/lib/images/download-and-store';
 import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 import { runShadowBatch } from '@/lib/semantic-shadow';
 
@@ -535,6 +536,8 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           ? ArticleStatus.APPROVED
           : ArticleStatus.DRAFT;
 
+      // Always create as DRAFT first — external URL must never appear in a published article.
+      // Image is resolved below, then the article is published atomically with its final image.
       const article = await prisma.article.create({
         data: {
           title: generated.title,
@@ -544,7 +547,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           aiCommentary: generated.aiCommentary ?? null,
           seoTitle: generated.seoTitle ?? null,
           seoDescription: generated.seoDescription ?? null,
-          status,
+          status: ArticleStatus.DRAFT,
           articleType: ArticleType.NEWS,
           sourceType: SourceType.RSS_SUMMARY,
           categoryId: resolvedCategoryId,
@@ -552,17 +555,12 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
           displayAuthorId: await pickDisplayAuthor(),
           readTime: estimateReadTime(generated.contentHtml),
           suggestedImageUrl: item.imageUrl,
-          coverImage: item.imageUrl ?? null,
+          originalImageUrl: item.imageUrl ?? null,
+          coverImage: null,
           imageStatus: item.imageUrl ? ImageStatus.RSS_AVAILABLE : ImageStatus.NONE,
-          publishedAt: status === ArticleStatus.PUBLISHED ? new Date() : null,
+          publishedAt: null,
         },
       });
-
-      if (status === ArticleStatus.PUBLISHED) {
-        revalidatePath('/sitemap.xml');
-        revalidatePath('/sitemap-articles.xml');
-        revalidatePath('/news-sitemap.xml');
-      }
 
       await prisma.aiDraft.create({
         data: {
@@ -603,40 +601,131 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
         data: { generatedArticleId: article.id, generationStatus: 'success', resolvedCategory: resolvedCategoryName },
       }).catch(() => {});
 
-      // Auto-assign featured image from library if article has no RSS image
-      if (!item.imageUrl) {
+      // ── Resolve image before publishing ────────────────────────────────────────
+      // Collect all image fields here; publish only once everything is ready.
+
+      const cat = await prisma.category.findUnique({
+        where: { id: resolvedCategoryId },
+        select: { slug: true },
+      });
+
+      type ImageFields = {
+        coverImage?: string | null;
+        generatedImageUrl?: string | null;
+        imageStatus?: ImageStatus;
+        imageSource?: string | null;
+        imageProvider?: string | null;
+        imageAttribution?: string | null;
+        imageDownloadStatus?: string;
+        imageDownloadedAt?: Date | null;
+        imageMimeType?: string | null;
+        imageWidth?: number | null;
+        imageHeight?: number | null;
+        imageFileSize?: number | null;
+        imageChecksum?: string | null;
+        localImagePath?: string | null;
+        imageDownloadError?: string | null;
+      };
+
+      let imageFields: ImageFields = {};
+
+      if (item.imageUrl) {
         try {
-          const cat = await prisma.category.findUnique({
-            where: { id: resolvedCategoryId },
-            select: { slug: true },
+          const dlResult = await downloadAndStoreImage({
+            sourceUrl: item.imageUrl,
+            articleSlug: slug,
+            articleId: article.id,
+            sourceName: item.sourceName,
           });
-          if (cat) {
-            const img = await selectFeaturedImage({
-              categorySlug: cat.slug,
-              matchedKeywords: semanticResult.matchedKeywords,
-              articleTitle: generated.title,
-              articleId: article.id,
-            });
-            if (img) {
-              await prisma.article.update({
-                where: { id: article.id },
-                data: {
-                  coverImage: img.publicUrl,
-                  generatedImageUrl: img.publicUrl,
-                  imageStatus: ImageStatus.GENERATED,
-                  imageSource: 'LIBRARY',
-                  imageProvider: 'Library',
-                  imageAttribution: img.photographer ? `${img.photographer} via Pexels` : null,
-                },
+
+          if (dlResult.success) {
+            imageFields = {
+              coverImage: dlResult.publicUrl,
+              imageStatus: ImageStatus.RSS_SELECTED,
+              imageDownloadStatus: 'SUCCESS',
+              imageDownloadedAt: new Date(),
+              imageMimeType: dlResult.mimeType ?? null,
+              imageWidth: dlResult.width ?? null,
+              imageHeight: dlResult.height ?? null,
+              imageFileSize: dlResult.fileSize ?? null,
+              imageChecksum: dlResult.checksum ?? null,
+              localImagePath: dlResult.localPath ?? null,
+              imageDownloadError: null,
+            };
+            plog('image_downloaded', { articleId: article.id, publicUrl: dlResult.publicUrl, dedup: dlResult.deduplicated });
+          } else {
+            imageFields = {
+              imageDownloadStatus: 'FAILED',
+              imageDownloadError: (dlResult.error ?? 'unknown').slice(0, 500),
+            };
+            plog('image_download_failed', { articleId: article.id, error: dlResult.error });
+
+            // Fallback: try Image Library
+            if (cat) {
+              const img = await selectFeaturedImage({
+                categorySlug: cat.slug,
+                matchedKeywords: semanticResult.matchedKeywords,
+                articleTitle: generated.title,
+                articleId: article.id,
               });
-              plog('auto_image_assigned', { articleId: article.id, publicUrl: img.publicUrl, level: img.fallbackLevel });
-            } else {
-              plog('auto_image_skip', { reason: 'no_image_in_library', articleId: article.id });
+              if (img) {
+                imageFields.coverImage = img.publicUrl;
+                imageFields.generatedImageUrl = img.publicUrl;
+                imageFields.imageStatus = ImageStatus.GENERATED;
+                imageFields.imageSource = 'LIBRARY';
+                imageFields.imageProvider = 'Library';
+                imageFields.imageAttribution = img.photographer ? `${img.photographer} via Pexels` : null;
+                plog('image_fallback_library', { articleId: article.id, publicUrl: img.publicUrl });
+              }
             }
+          }
+        } catch (imgErr) {
+          plog('image_download_error', { articleId: article.id, error: imgErr instanceof Error ? imgErr.message : String(imgErr) });
+        }
+      } else if (cat) {
+        // No RSS image — try Image Library directly
+        try {
+          const img = await selectFeaturedImage({
+            categorySlug: cat.slug,
+            matchedKeywords: semanticResult.matchedKeywords,
+            articleTitle: generated.title,
+            articleId: article.id,
+          });
+          if (img) {
+            imageFields = {
+              coverImage: img.publicUrl,
+              generatedImageUrl: img.publicUrl,
+              imageStatus: ImageStatus.GENERATED,
+              imageSource: 'LIBRARY',
+              imageProvider: 'Library',
+              imageAttribution: img.photographer ? `${img.photographer} via Pexels` : null,
+            };
+            plog('auto_image_assigned', { articleId: article.id, publicUrl: img.publicUrl, level: img.fallbackLevel });
+          } else {
+            plog('auto_image_skip', { reason: 'no_image_in_library', articleId: article.id });
           }
         } catch (imgErr) {
           plog('auto_image_error', { articleId: article.id, error: imgErr instanceof Error ? imgErr.message : String(imgErr) });
         }
+      }
+
+      // ── Publish article with final image atomically ─────────────────────────
+      // This is the single write that makes the article visible at its final status.
+      // No external URL ever reaches a published article's coverImage field.
+
+      await prisma.article.update({
+        where: { id: article.id },
+        data: {
+          status,
+          publishedAt: status === ArticleStatus.PUBLISHED ? new Date() : null,
+          ...imageFields,
+        },
+      });
+
+      if (status === ArticleStatus.PUBLISHED) {
+        revalidatePath('/sitemap.xml');
+        revalidatePath('/sitemap-articles.xml');
+        revalidatePath('/news-sitemap.xml');
       }
 
       const ext = extractionMap.get(item.url);

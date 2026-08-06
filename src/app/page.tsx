@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: BRAND.domain,
-    siteName: BRAND.name,
+    siteName: BRAND.seoName,
     locale: SITE.locale,
   },
 };

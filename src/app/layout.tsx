@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(BRAND.domain),
   title: {
     default: `${BRAND.name} — ${BRAND.tagline}`,
-    template: `%s | ${BRAND.name}`,
+    template: `%s | ${BRAND.seoName}`,
   },
   description: BRAND.description,
   keywords: ['τεχνολογία', 'οικονομία', 'ειδήσεις', 'Ελλάδα', 'επιχειρηματικότητα'],
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: SITE.locale,
     url: BRAND.domain,
-    siteName: BRAND.name,
+    siteName: BRAND.seoName,
     title: `${BRAND.name} — ${BRAND.tagline}`,
     description: BRAND.description,
   },

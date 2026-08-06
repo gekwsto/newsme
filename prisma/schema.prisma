@@ -167,11 +167,21 @@ model Article {
   coverImagePrompt  String?       @db.Text
   generatedImageUrl String?
   suggestedImageUrl String?
-  imageStatus       ImageStatus   @default(NONE)
-  imageSource       String?
-  imageAttribution  String?
-  imageProvider     String?
-  imageCostEstimate Float?
+  imageStatus          ImageStatus   @default(NONE)
+  imageSource          String?
+  imageAttribution     String?
+  imageProvider        String?
+  imageCostEstimate    Float?
+  originalImageUrl     String?
+  localImagePath       String?
+  imageDownloadStatus  String?
+  imageDownloadedAt    DateTime?
+  imageMimeType        String?
+  imageWidth           Int?
+  imageHeight          Int?
+  imageFileSize        Int?
+  imageChecksum        String?
+  imageDownloadError   String?
   status            ArticleStatus @default(DRAFT)
   articleType       ArticleType   @default(NEWS)
   sourceType        SourceType    @default(MANUAL)
@@ -211,6 +221,7 @@ model Article {
   publishQueueItems    PublishQueueItem[]
   searchConsoleMetrics SearchConsoleMetric[]
 
+  @@index([imageChecksum])
   @@map("articles")
 }
 

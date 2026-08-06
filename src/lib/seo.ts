@@ -2,7 +2,7 @@ import { BRAND } from '@/config/brand';
 import { SITE } from '@/config/site';
 
 export const SITE_URL = BRAND.domain;
-export const SITE_NAME = BRAND.name;
+export const SITE_NAME = BRAND.seoName;
 export const SITE_DESCRIPTION = BRAND.description;
 export const SITE_LOCALE = SITE.locale;
 export const SITE_TWITTER = BRAND.twitterHandle;
@@ -26,7 +26,7 @@ export function organizationJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'NewsMediaOrganization',
     '@id': `${BRAND.domain}/#organization`,
-    name: BRAND.name,
+    name: BRAND.seoName,
     url: BRAND.domain,
     logo: {
       '@type': 'ImageObject',
@@ -61,7 +61,7 @@ export function websiteJsonLd() {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${BRAND.domain}/#website`,
-    name: BRAND.name,
+    name: BRAND.seoName,
     url: BRAND.domain,
     description: BRAND.description,
     inLanguage: SITE.language,
