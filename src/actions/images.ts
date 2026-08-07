@@ -8,7 +8,8 @@ import { searchPexelsImages, searchPexelsWithFallback, type PexelsPhoto } from '
 import { buildSmartImageQuery } from '@/lib/images/smart-query';
 import { downloadAndStoreImage } from '@/lib/images/download-and-store';
 
-type ImageActionResult = { ok: true } | { ok: false; error: string };
+type ImageActionResult = { ok: true; url: string } | { ok: false; error: string };
+type SimpleActionResult = { ok: true } | { ok: false; error: string };
 type GenerateResult = { ok: true; url: string; cost: number } | { ok: false; error: string };
 
 async function requireAuth() {
@@ -87,7 +88,7 @@ export async function useRssImage(articleId: string): Promise<ImageActionResult>
     });
 
     revalidateArticlePaths(articleId, article);
-    return { ok: true };
+    return { ok: true, url: dlResult.publicUrl! };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
@@ -212,7 +213,7 @@ export async function setManualImage(
     });
 
     revalidateArticlePaths(articleId, article);
-    return { ok: true };
+    return { ok: true, url: dlResult.publicUrl! };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
@@ -329,13 +330,13 @@ export async function selectPexelsImage(
     });
 
     revalidateArticlePaths(articleId, article);
-    return { ok: true };
+    return { ok: true, url: dlResult.publicUrl! };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Σφάλμα' };
   }
 }
 
-export async function removeArticleImage(articleId: string): Promise<ImageActionResult> {
+export async function removeArticleImage(articleId: string): Promise<SimpleActionResult> {
   try {
     await requireAuth();
 

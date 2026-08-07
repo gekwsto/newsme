@@ -97,7 +97,7 @@ export default function ImageManager({
     handle(async () => {
       const res = await useRssImage(articleId);
       if (!res.ok) { setError(res.error); return; }
-      setLocalImageUrl(suggestedImageUrl);
+      setLocalImageUrl(res.url);
       setLocalStatus('RSS_SELECTED');
       setLocalSource('RSS');
       setLocalAttribution(null);
@@ -123,7 +123,7 @@ export default function ImageManager({
       if (!manualUrl.trim()) { setError('Βάλε URL εικόνας'); return; }
       const res = await setManualImage(articleId, manualUrl.trim(), manualAttribution.trim() || undefined);
       if (!res.ok) { setError(res.error); return; }
-      setLocalImageUrl(manualUrl.trim());
+      setLocalImageUrl(res.url);
       setLocalStatus('MANUAL_UPLOADED');
       setLocalSource('MANUAL');
       setLocalAttribution(manualAttribution.trim() || null);
@@ -195,7 +195,7 @@ export default function ImageManager({
     startSelect(async () => {
       const res = await selectPexelsImage(articleId, photo);
       if (!res.ok) { setError(res.error); setSelectingId(null); return; }
-      setLocalImageUrl(photo.imageUrl);
+      setLocalImageUrl(res.url);
       setLocalStatus('MANUAL_UPLOADED');
       setLocalSource('PEXELS');
       setLocalAttribution(`${photo.photographer} via Pexels`);
