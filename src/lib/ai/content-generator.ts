@@ -314,25 +314,5 @@ export async function generateArticleContent(options: GenerateOptions): Promise<
   const article = validated.data as GeneratedArticleFull;
   article._prompts = { systemPrompt, userPrompt, model: 'gpt-5-mini', promptVersion: PROMPT_VERSION, generatorVersion: GENERATOR_VERSION };
 
-  // Append source attribution when a source URL was provided
-  if (options.sourceUrl) {
-    const domain = (() => {
-      try { return new URL(options.sourceUrl).hostname.replace(/^www\./, ''); }
-      catch { return options.sourceUrl; }
-    })();
-    const displayName = options.sourceName || domain;
-    const dateStr = new Date().toLocaleDateString('el-GR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    article.contentHtml +=
-      `\n<div class="article-source-attribution">\n` +
-      `  <p><strong>Πηγή:</strong> ${displayName}` +
-      ` &nbsp;|&nbsp; <a href="${options.sourceUrl}" target="_blank" rel="noopener noreferrer">Αρχικό άρθρο</a>` +
-      ` &nbsp;|&nbsp; ${dateStr}</p>\n` +
-      `</div>`;
-  }
-
   return article;
 }

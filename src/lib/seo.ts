@@ -161,6 +161,14 @@ export function newsArticleJsonLd(article: {
   return schema;
 }
 
+/**
+ * Remove any article-source-attribution block baked into stored contentHtml.
+ * Applied at render time so DB records are preserved for audit.
+ */
+export function stripSourceAttribution(html: string): string {
+  return html.replace(/<div class="article-source-attribution">[\s\S]*?<\/div>/g, '').trim();
+}
+
 /** Strip HTML tags and decode common entities. Safe for server-only use (no DOM). */
 export function stripHtmlToText(html: string, maxLength = 20_000): string {
   const text = html

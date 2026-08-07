@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { mapPrismaArticle, ARTICLE_PUBLIC_SELECT, resolveArticleImageUrl } from '@/lib/article-mapper';
 import { addHeadingIds, extractHeadings } from '@/lib/toc';
-import { SITE_URL, articleCanonical, newsArticleJsonLd, breadcrumbJsonLd, faqPageJsonLd, stripHtmlToText, DEFAULT_OG_IMAGE, SITE_NAME, SITE_TWITTER } from '@/lib/seo';
+import { SITE_URL, articleCanonical, newsArticleJsonLd, breadcrumbJsonLd, faqPageJsonLd, stripHtmlToText, stripSourceAttribution, DEFAULT_OG_IMAGE, SITE_NAME, SITE_TWITTER } from '@/lib/seo';
 import { BRAND } from '@/config/brand';
 import { getDisplayCategory } from '@/config/categories';
 import CategoryBadge from '@/components/ui/CategoryBadge';
@@ -115,7 +115,8 @@ export default async function ArticlePage({
   }
 
   const article = mapPrismaArticle(raw);
-  const contentWithIds = addHeadingIds(article.content);
+  const cleanContent = stripSourceAttribution(article.content);
+  const contentWithIds = addHeadingIds(cleanContent);
   const headings = extractHeadings(contentWithIds);
 
   const [relatedRaw, trendingRaw] = await Promise.all([
@@ -136,7 +137,7 @@ export default async function ArticlePage({
   const trending = trendingRaw.map(mapPrismaArticle);
 
   const displayCat = getDisplayCategory(article.category.slug) ?? article.category;
-  const articleBody = stripHtmlToText(article.content, 20_000) || article.excerpt;
+  const articleBody = stripHtmlToText(cleanContent, 20_000) || article.excerpt;
   const canonical = articleCanonical(categorySlug, articleSlug);
 
   const articleJsonLd = newsArticleJsonLd({
