@@ -7,7 +7,875 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(EDITOR)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  approvals    Approval[]
+  articles     Article[]
+
+  @@map("users")
+}
+
+model Category {
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  color              String              @default("#6366f1")
+  articles           Article[]
+  discoveredArticles DiscoveredArticle[]
+  rssSources         RssSource[]
+  semanticCategory   SemanticCategory?
+
+  @@map("categories")
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  articles    ArticleTag[]
+  semanticTag SemanticTag?
+
+  @@map("tags")
+}
+
+model Article {
+  id                   String                @id @default(cuid())
+  title                String
+  slug                 String                @unique
+  excerpt              String
+  content              String
+  coverImage           String?
+  coverImagePrompt     String?
+  generatedImageUrl    String?
+  suggestedImageUrl    String?
+  imageStatus          ImageStatus           @default(NONE)
+  imageSource          String?
+  imageAttribution     String?
+  imageProvider        String?
+  imageCostEstimate    Float?
+  status               ArticleStatus         @default(DRAFT)
+  articleType          ArticleType           @default(NEWS)
+  sourceType           SourceType            @default(MANUAL)
+  aiCommentary         String?
+  seoTitle             String?
+  seoDescription       String?
+  seoScore             Int?
+  evergreenKeyword     String?
+  secondaryKeywords    String[]              @default([])
+  faqJson              Json?
+  searchIntent         String?
+  estimatedDifficulty  Int?
+  qualityScore         Float?
+  aiSeoScore           Float?
+  readabilityScore     Float?
+  views                Int                   @default(0)
+  readTime             Int                   @default(3)
+  publishedAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  categoryId           String
+  authorId             String
+  displayAuthorId      String?
+  imageChecksum        String?
+  imageDownloadError   String?
+  imageDownloadStatus  String?
+  imageDownloadedAt    DateTime?
+  imageFileSize        Int?
+  imageHeight          Int?
+  imageMimeType        String?
+  imageWidth           Int?
+  localImagePath       String?
+  originalImageUrl     String?
+  aiDraft              AiDraft?
+  approvals            Approval[]
+  tags                 ArticleTag[]
+  author               User                  @relation(fields: [authorId], references: [id])
+  category             Category              @relation(fields: [categoryId], references: [id])
+  displayAuthor        Author?               @relation(fields: [displayAuthorId], references: [id])
+  publishQueueItems    PublishQueueItem[]
+  scheduledPosts       ScheduledPost[]
+  searchConsoleMetrics SearchConsoleMetric[]
+  socialPosts          SocialPost[]
+  trainingExample      TrainingExample?
+  wordpressDeliveries  WordpressDelivery[]
+
+  @@index([imageChecksum])
+  @@map("articles")
+}
+
+model ArticleTag {
+  articleId String
+  tagId     String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@map("article_tags")
+}
+
+model Author {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  bio          String?
+  avatarUrl    String?
+  title        String?
+  isActive     Boolean   @default(true)
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  facebookUrl  String?
+  instagramUrl String?
+  linkedinUrl  String?
+  tiktokUrl    String?
+  twitterUrl   String?
+  youtubeUrl   String?
+  articles     Article[]
+
+  @@map("authors")
+}
+
+model AiDraft {
+  id               String   @id @default(cuid())
+  articleId        String   @unique
+  prompt           String
+  rawOutput        String
+  model            String   @default("gpt-4o")
+  imagePrompt      String?
+  promptVersion    String?
+  generatorVersion String?
+  createdAt        DateTime @default(now())
+  article          Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("ai_drafts")
+}
+
+model SocialPost {
+  id               String            @id @default(cuid())
+  articleId        String
+  platform         SocialPlatform
+  content          String
+  status           SocialPostStatus  @default(DRAFT)
+  scheduledAt      DateTime?
+  publishedAt      DateTime?
+  externalPostId   String?
+  errorMessage     String?
+  createdAt        DateTime          @default(now())
+  performance      PostPerformance?
+  publishQueueItem PublishQueueItem?
+  scheduledPost    ScheduledPost?
+  article          Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("social_posts")
+}
+
+model Approval {
+  id         String         @id @default(cuid())
+  articleId  String
+  reviewerId String
+  action     ApprovalAction
+  note       String?
+  createdAt  DateTime       @default(now())
+  article    Article        @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reviewer   User           @relation(fields: [reviewerId], references: [id])
+
+  @@map("approvals")
+}
+
+model RssSource {
+  id                  String              @id @default(cuid())
+  name                String
+  url                 String              @unique
+  categoryId          String
+  enabled             Boolean             @default(true)
+  allowAutoGeneration Boolean             @default(false)
+  language            String              @default("EN")
+  country             String              @default("GLOBAL")
+  reliabilityScore    Int                 @default(70)
+  feedSourceType      String              @default("NEWS")
+  lastFetchedAt       DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  articles            DiscoveredArticle[]
+  category            Category            @relation(fields: [categoryId], references: [id])
+
+  @@map("rss_sources")
+}
+
+model EvergreenAutomationSettings {
+  id                 String   @id @default(cuid())
+  isEnabled          Boolean  @default(false)
+  allowedHours       Int[]    @default([9, 20])
+  targetDraftCount   Int      @default(3)
+  articlesPerRun     Int      @default(2)
+  dailyAiBudgetLimit Float    @default(2.0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("evergreen_automation_settings")
+}
+
+model NewsAutomationSettings {
+  id                     String   @id @default(cuid())
+  rssScanIntervalMinutes Int      @default(60)
+  maxNewsPerDay          Int      @default(6)
+  publishMode            String   @default("DRAFT")
+  facebookAutoPost       Boolean  @default(false)
+  allowedPublishHours    Int[]    @default([10, 13, 15, 18, 21, 23])
+  minimumImportanceScore Int      @default(7)
+  compoundScoreThreshold Int      @default(45)
+  dailyAiBudgetLimit     Float    @default(0.80)
+  isEnabled              Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("news_automation_settings")
+}
+
+model CategoryImageSettings {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  imageMode     String   @default("TEMPLATE")
+  templateColor String   @default("#6366f1")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("category_image_settings")
+}
+
+model DiscoveredArticle {
+  id                        String           @id @default(cuid())
+  sourceId                  String
+  title                     String
+  url                       String           @unique
+  excerpt                   String?
+  publishedAt               DateTime?
+  categoryId                String
+  status                    DiscoveredStatus @default(NEW)
+  imageUrl                  String?
+  localScore                Int?
+  filteredReason            String?
+  semanticScore             Int?
+  matchedKeywords           Json?
+  semanticCategory          String?
+  semanticSecondaryCategory String?
+  passedSemanticFilter      Boolean          @default(false)
+  compoundScore             Float?
+  compoundReason            String?
+  selectedForGeneration     Boolean          @default(false)
+  sourceArticleBody         String?
+  extractionSuccess         Boolean?
+  extractionMethod          String?
+  extractionWordCount       Int?
+  clusterId                 String?
+  clusterPrimary            Boolean          @default(false)
+  humanVerdict              String?
+  humanVerdictAt            DateTime?
+  humanVerdictNote          String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  score                     ContentScore?
+  category                  Category         @relation(fields: [categoryId], references: [id])
+  cluster                   TrendCluster?    @relation(fields: [clusterId], references: [id])
+  source                    RssSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@map("discovered_articles")
+}
+
+model ContentScore {
+  id                   String            @id @default(cuid())
+  discoveredArticleId  String            @unique
+  greekInterestScore   Int               @default(0)
+  searchPotentialScore Int               @default(0)
+  facebookClickScore   Int               @default(0)
+  evergreenScore       Int               @default(0)
+  overallScore         Int               @default(0)
+  rejected             Boolean           @default(false)
+  rejectReason         String?
+  reasoning            String?
+  scoredAt             DateTime          @default(now())
+  discoveredArticle    DiscoveredArticle @relation(fields: [discoveredArticleId], references: [id], onDelete: Cascade)
+
+  @@map("content_scores")
+}
+
+model TrendCluster {
+  id           String              @id @default(cuid())
+  topic        String
+  trendScore   Int                 @default(0)
+  articleCount Int                 @default(0)
+  sourceCount  Int                 @default(0)
+  firstSeenAt  DateTime            @default(now())
+  lastSeenAt   DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  articles     DiscoveredArticle[]
+
+  @@map("trend_clusters")
+}
+
+model PostPerformance {
+  id                 String     @id @default(cuid())
+  socialPostId       String     @unique
+  predictedReach     Int        @default(0)
+  predictedComments  Int        @default(0)
+  predictedShares    Int        @default(0)
+  actualReach        Int        @default(0)
+  actualComments     Int        @default(0)
+  actualShares       Int        @default(0)
+  actualReactions    Int        @default(0)
+  predictionAccuracy Int?
+  learningWeight     Float      @default(1.0)
+  lastSyncedAt       DateTime?
+  createdAt          DateTime   @default(now())
+  socialPost         SocialPost @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+
+  @@map("post_performances")
+}
+
+model TopicPerformance {
+  id                 String   @id @default(cuid())
+  topic              String   @unique
+  category           String   @default("")
+  avgReach           Float    @default(0)
+  avgComments        Float    @default(0)
+  avgShares          Float    @default(0)
+  avgReactions       Float    @default(0)
+  avgDiscussionScore Float    @default(0)
+  avgFacebookScore   Float    @default(0)
+  articleCount       Int      @default(0)
+  performanceScore   Float    @default(0)
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  @@map("topic_performances")
+}
+
+model EvergreenOpportunity {
+  id             String   @id @default(cuid())
+  topic          String
+  primaryKeyword String
+  articleType    String   @default("guide")
+  category       String   @default("")
+  seoScore       Int      @default(0)
+  businessValue  Int      @default(0)
+  difficulty     Int      @default(50)
+  evergreenValue Int      @default(0)
+  fbReusability  Int      @default(0)
+  overallScore   Int      @default(0)
+  clusterTopics  String[] @default([])
+  status         String   @default("new")
+  reasoning      String?
+  generatedAt    DateTime @default(now())
+
+  @@map("evergreen_opportunities")
+}
+
+model ScheduledPost {
+  id           String              @id @default(cuid())
+  articleId    String
+  socialPostId String              @unique
+  platform     SocialPlatform
+  scheduledFor DateTime
+  status       ScheduledPostStatus @default(PENDING)
+  publishedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime            @default(now())
+  article      Article             @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  socialPost   SocialPost          @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+
+  @@map("scheduled_posts")
+}
+
+model PublishQueueItem {
+  id            String          @id @default(cuid())
+  articleId     String
+  socialPostId  String?         @unique
+  queuePosition Int             @default(0)
+  priority      Int             @default(1)
+  scheduledFor  DateTime?
+  status        QueueItemStatus @default(QUEUED)
+  publishedAt   DateTime?
+  errorMessage  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  article       Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  socialPost    SocialPost?     @relation(fields: [socialPostId], references: [id])
+
+  @@map("publish_queue_items")
+}
+
+model SystemEvent {
+  id        String            @id @default(cuid())
+  service   String
+  type      String
+  status    SystemEventStatus
+  message   String
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([service, status, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("system_events")
+}
+
+model SearchConsoleMetric {
+  id              String   @id @default(cuid())
+  articleId       String
+  keyword         String
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  ctr             Float    @default(0)
+  averagePosition Float    @default(0)
+  date            DateTime @db.Date
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  article         Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, keyword, date])
+  @@index([articleId])
+  @@index([keyword])
+  @@index([date(sort: Desc)])
+  @@map("search_console_metrics")
+}
+
+model KeywordOpportunity {
+  id              String   @id @default(cuid())
+  keyword         String   @unique
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  ctr             Float    @default(0)
+  avgPosition     Float    @default(0)
+  clusterSlug     String?
+  topicSuggestion String?
+  status          String   @default("new")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([clusterSlug])
+  @@map("keyword_opportunities")
+}
+
+model ImageCategory {
+  id           String                @id @default(cuid())
+  name         String
+  slug         String                @unique
+  description  String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  assets       ImageAsset[]
+  defaultImage ImageCategoryDefault?
+  collections  ImageCollection[]
+  tags         ImageTag[]
+
+  @@map("image_categories")
+}
+
+model ImageTag {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String
+  categoryId  String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  /// * JSON array of { keyword, aliases, isPriority } — keyword templates applied to all images with this tag
+  keywords    Json          @default("[]")
+  assets      ImageAsset[]
+  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  semanticTag SemanticTag?
+
+  @@unique([slug, categoryId])
+  @@map("image_tags")
+}
+
+model ImageCollection {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String
+  categoryId  String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assets      ImageAsset[]
+  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, categoryId])
+  @@map("image_collections")
+}
+
+model ImageAsset {
+  id               String                 @id @default(cuid())
+  categoryId       String
+  tagId            String?
+  collectionId     String?
+  pexelsId         Int?                   @unique
+  localPath        String
+  publicUrl        String
+  originalUrl      String?
+  photographer     String?
+  photographerUrl  String?
+  pexelsUrl        String?
+  uploadSource     String                 @default("pexels")
+  width            Int
+  height           Int
+  altText          String
+  description      String?
+  qualityScore     Int                    @default(5)
+  seasonStart      String?
+  seasonEnd        String?
+  theme            String                 @default("global")
+  usedCount        Int                    @default(0)
+  lastUsedAt       DateTime?
+  isActive         Boolean                @default(true)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  usages           ArticleImageUsage[]
+  category         ImageCategory          @relation(fields: [categoryId], references: [id])
+  collection       ImageCollection?       @relation(fields: [collectionId], references: [id])
+  tag              ImageTag?              @relation(fields: [tagId], references: [id])
+  categoryDefaults ImageCategoryDefault[]
+  keywords         ImageKeyword[]
+  performance      ImagePerformance?
+
+  @@index([categoryId, isActive, theme])
+  @@index([tagId])
+  @@index([collectionId])
+  @@map("image_assets")
+}
+
+model ImageKeyword {
+  id           String     @id @default(cuid())
+  imageAssetId String
+  keyword      String
+  aliases      Json       @default("[]")
+  isPriority   Boolean    @default(false)
+  isOverride   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([imageAssetId, keyword])
+  @@index([imageAssetId])
+  @@map("image_keywords")
+}
+
+model ImagePerformance {
+  id             String     @id @default(cuid())
+  imageAssetId   String     @unique
+  totalArticles  Int        @default(0)
+  totalViews     Int        @default(0)
+  totalClicks    Int        @default(0)
+  avgCtr         Float?
+  avgReadingTime Float?
+  avgScrollDepth Float?
+  lastSyncedAt   DateTime?
+  updatedAt      DateTime   @updatedAt
+  imageAsset     ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+
+  @@map("image_performance")
+}
+
+model ImageCategoryDefault {
+  id           String        @id @default(cuid())
+  categoryId   String        @unique
+  imageAssetId String
+  category     ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  imageAsset   ImageAsset    @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+
+  @@map("image_category_defaults")
+}
+
+model ImageSelectionSettings {
+  id                    String   @id @default(cuid())
+  categoryWeight        Float    @default(40)
+  subcategoryWeight     Float    @default(30)
+  priorityKeywordWeight Float    @default(25)
+  keywordWeight         Float    @default(10)
+  exactPhraseWeight     Float    @default(15)
+  multiKeyword2Bonus    Float    @default(10)
+  multiKeyword3Bonus    Float    @default(20)
+  qualityScoreWeight    Float    @default(1)
+  overrideBonus         Float    @default(1000)
+  recentUsage1dPenalty  Float    @default(-15)
+  recentUsage3dPenalty  Float    @default(-10)
+  recentUsage7dPenalty  Float    @default(-5)
+  usageCountPenalty     Float    @default(-1)
+  usageCountCap         Float    @default(-20)
+  updatedAt             DateTime @updatedAt
+
+  @@map("image_selection_settings")
+}
+
+model ArticleImageUsage {
+  id           String     @id @default(cuid())
+  articleId    String
+  imageAssetId String
+  createdAt    DateTime   @default(now())
+  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id])
+
+  @@index([articleId])
+  @@map("article_image_usages")
+}
+
+model TrainingExample {
+  id                  String           @id @default(cuid())
+  articleId           String           @unique
+  discoveredArticleId String?
+  sourceTitle         String
+  sourceExcerpt       String?
+  sourceUrl           String?
+  sourceName          String?
+  dataType            TrainingDataType
+  systemPrompt        String
+  userPrompt          String
+  aiCompletion        String
+  model               String
+  generatedTitle      String
+  generatedExcerpt    String
+  generatedTags       String[]
+  category            String?
+  promptVersion       String?
+  generatorVersion    String?
+  matchedKeywords     String[]         @default([])
+  semanticCategory    String?
+  compoundScore       Float?
+  wasEdited           Boolean          @default(false)
+  wasPublished        Boolean          @default(false)
+  wasRejected         Boolean          @default(false)
+  humanRating         Int?
+  finalTitle          String?
+  finalContent        String?
+  includeInExport     Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  article             Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([dataType, createdAt(sort: Desc)])
+  @@index([wasPublished, createdAt(sort: Desc)])
+  @@map("training_examples")
+}
+
+model PipelineRun {
+  id                    String                 @id @default(cuid())
+  status                PipelineRunStatus      @default(RUNNING)
+  startedAt             DateTime               @default(now())
+  finishedAt            DateTime?
+  forceRun              Boolean                @default(false)
+  triggeredBySite       String?
+  totalFeeds            Int                    @default(0)
+  failedFeeds           Int                    @default(0)
+  fetchedItems          Int                    @default(0)
+  skippedDuplicates     Int                    @default(0)
+  localRejected         Int                    @default(0)
+  semanticRejected      Int                    @default(0)
+  compoundRejected      Int                    @default(0)
+  selectedForGeneration Int                    @default(0)
+  generatedArticles     Int                    @default(0)
+  failedGenerations     Int                    @default(0)
+  modelUsed             String?
+  promptVersion         String?
+  generatorVersion      String?
+  compoundThreshold     Float?
+  reason                String?
+  errorMessage          String?
+  items                 PipelineRunItem[]
+  shadowResults         ShadowSemanticResult[]
+
+  @@index([startedAt(sort: Desc)])
+  @@map("pipeline_runs")
+}
+
+model PipelineRunItem {
+  id                    String      @id @default(cuid())
+  runId                 String
+  sourceName            String
+  rssTitle              String
+  rssUrl                String
+  localScore            Float?
+  semanticScore         Float?
+  compoundScore         Float?
+  semanticCategory      String?
+  matchedKeywords       String[]    @default([])
+  resolvedCategory      String?
+  semanticBreakdown     Json?
+  extractionStatus      String?
+  extractionWordCount   Int?
+  selectedForGeneration Boolean     @default(false)
+  generatedArticleId    String?
+  generationStatus      String?
+  failureReason         String?
+  createdAt             DateTime    @default(now())
+  run                   PipelineRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@map("pipeline_run_items")
+}
+
+/// *
+///  * SemanticCategory: mirrors the 11 categories in semantic-matrix.json.
+///  * Optional link to an existing article Category (for pipeline category assignment).
+model SemanticCategory {
+  id         String        @id @default(cuid())
+  name       String        @unique
+  slug       String        @unique
+  weight     Float         @default(1.0)
+  isActive   Boolean       @default(true)
+  categoryId String?       @unique
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  category   Category?     @relation(fields: [categoryId], references: [id])
+  tags       SemanticTag[]
+
+  @@map("semantic_categories")
+}
+
+/// *
+///  * SemanticTag: canonical semantic concept (e.g. "Πυρκαγιά").
+///  * Matched via aliases. Contributes a single bounded score to its category.
+model SemanticTag {
+  id                    String             @id @default(cuid())
+  name                  String             @unique
+  slug                  String             @unique
+  semanticCategoryId    String
+  weight                Float              @default(1.0)
+  bonus                 Int                @default(0)
+  isPriority            Boolean            @default(false)
+  isActive              Boolean            @default(true)
+  useForArticleTagging  Boolean            @default(true)
+  useForImageMatching   Boolean            @default(true)
+  useForRelatedArticles Boolean            @default(false)
+  tagId                 String?            @unique
+  imageTagId            String?            @unique
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  aliases               SemanticTagAlias[]
+  imageTag              ImageTag?          @relation(fields: [imageTagId], references: [id])
+  semanticCategory      SemanticCategory   @relation(fields: [semanticCategoryId], references: [id])
+  tag                   Tag?               @relation(fields: [tagId], references: [id])
+
+  @@index([semanticCategoryId, isActive])
+  @@map("semantic_tags")
+}
+
+/// *
+///  * SemanticTagAlias: a surface form (e.g. "φωτιά", "112", "εκκένωση")
+///  * that maps to a canonical SemanticTag.
+model SemanticTagAlias {
+  id            String      @id @default(cuid())
+  semanticTagId String
+  alias         String
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  semanticTag   SemanticTag @relation(fields: [semanticTagId], references: [id], onDelete: Cascade)
+
+  @@unique([semanticTagId, alias])
+  @@index([alias])
+  @@map("semantic_tag_aliases")
+}
+
+/// *
+///  * Versioned snapshots of the full semantic configuration.
+///  * Created automatically on each import or significant change.
+model SemanticConfigVersion {
+  id          String   @id @default(cuid())
+  version     Int      @unique
+  description String?
+  snapshot    Json
+  isActive    Boolean  @default(false)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@map("semantic_config_versions")
+}
+
+model ShadowSemanticResult {
+  id                 String      @id @default(cuid())
+  pipelineRunId      String
+  rssUrl             String
+  rssTitle           String
+  oldCategory        String?
+  oldScore           Float
+  oldPassed          Boolean
+  newCategory        String?
+  newScore           Int
+  newPassed          Boolean
+  newMatchedTags     Json
+  zeroMatch          Boolean
+  categoryAgree      Boolean
+  passAgree          Boolean
+  disagreement       Boolean
+  disagreementReason String?
+  createdAt          DateTime    @default(now())
+  pipelineRun        PipelineRun @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
+
+  @@index([pipelineRunId])
+  @@index([disagreement])
+  @@index([createdAt(sort: Desc)])
+  @@map("shadow_semantic_results")
+}
+
+model PushSubscription {
+  id            String    @id @default(cuid())
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  platform      String?
+  deviceType    String?
+  isActive      Boolean   @default(true)
+  isTestDevice  Boolean   @default(false)
+  failureCount  Int       @default(0)
+  lastSuccessAt DateTime?
+  lastFailureAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isActive])
+  @@map("push_subscriptions")
+}
+
+model PushCampaign {
+  id            String             @id @default(cuid())
+  title         String
+  body          String
+  targetUrl     String
+  imageUrl      String?
+  articleId     String?
+  status        PushCampaignStatus @default(DRAFT)
+  totalTargeted Int                @default(0)
+  sentCount     Int                @default(0)
+  failedCount   Int                @default(0)
+  clickedCount  Int                @default(0)
+  createdAt     DateTime           @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("push_campaigns")
+}
+
+model SemanticAuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String
+  before     Json?
+  after      Json?
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("semantic_audit_logs")
+}
 
 enum ArticleType {
   NEWS
@@ -119,959 +987,65 @@ enum SystemEventStatus {
   ERROR
 }
 
-// ─── Models ───────────────────────────────────────────────────────────────────
-
-model User {
-  id           String     @id @default(cuid())
-  name         String
-  email        String     @unique
-  passwordHash String
-  role         Role       @default(EDITOR)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  articles     Article[]
-  approvals    Approval[]
-
-  @@map("users")
-}
-
-model Category {
-  id                 String              @id @default(cuid())
-  name               String
-  slug               String              @unique
-  color              String              @default("#6366f1")
-  articles           Article[]
-  rssSources         RssSource[]
-  discoveredArticles DiscoveredArticle[]
-  semanticCategory   SemanticCategory?
-
-  @@map("categories")
-}
-
-model Tag {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  articles    ArticleTag[]
-  semanticTag SemanticTag?
-
-  @@map("tags")
-}
-
-model Article {
-  id                String        @id @default(cuid())
-  title             String
-  slug              String        @unique
-  excerpt           String
-  content           String        @db.Text
-  coverImage        String?
-  coverImagePrompt  String?       @db.Text
-  generatedImageUrl String?
-  suggestedImageUrl String?
-  imageStatus          ImageStatus   @default(NONE)
-  imageSource          String?
-  imageAttribution     String?
-  imageProvider        String?
-  imageCostEstimate    Float?
-  originalImageUrl     String?
-  localImagePath       String?
-  imageDownloadStatus  String?
-  imageDownloadedAt    DateTime?
-  imageMimeType        String?
-  imageWidth           Int?
-  imageHeight          Int?
-  imageFileSize        Int?
-  imageChecksum        String?
-  imageDownloadError   String?
-  status            ArticleStatus @default(DRAFT)
-  articleType       ArticleType   @default(NEWS)
-  sourceType        SourceType    @default(MANUAL)
-  aiCommentary      String?       @db.Text
-  seoTitle          String?
-  seoDescription    String?
-  seoScore            Int?
-  evergreenKeyword    String?
-  secondaryKeywords   String[]      @default([])
-  faqJson             Json?
-  searchIntent        String?
-  estimatedDifficulty Int?
-  qualityScore       Float?
-  aiSeoScore         Float?
-  readabilityScore   Float?
-  views               Int           @default(0)
-  readTime          Int           @default(3)
-  publishedAt       DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  authorId String
-  author   User    @relation(fields: [authorId], references: [id])
-
-  displayAuthorId String?
-  displayAuthor   Author? @relation(fields: [displayAuthorId], references: [id], onDelete: SetNull)
-
-  tags                 ArticleTag[]
-  aiDraft              AiDraft?
-  trainingExample      TrainingExample?
-  socialPosts          SocialPost[]
-  approvals            Approval[]
-  scheduledPosts       ScheduledPost[]
-  publishQueueItems    PublishQueueItem[]
-  searchConsoleMetrics SearchConsoleMetric[]
-
-  @@index([imageChecksum])
-  @@map("articles")
-}
-
-model ArticleTag {
-  articleId String
-  tagId     String
-  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([articleId, tagId])
-  @@map("article_tags")
-}
-
-model Author {
-  id           String    @id @default(cuid())
-  name         String
-  slug         String    @unique
-  bio          String?   @db.Text
-  avatarUrl    String?
-  title        String?
-  twitterUrl   String?
-  facebookUrl  String?
-  instagramUrl String?
-  linkedinUrl  String?
-  youtubeUrl   String?
-  tiktokUrl    String?
-  isActive     Boolean   @default(true)
-  isDefault    Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  articles     Article[]
-
-  @@map("authors")
-}
-
-model AiDraft {
-  id               String   @id @default(cuid())
-  articleId        String   @unique
-  article          Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  prompt           String   @db.Text
-  rawOutput        String   @db.Text
-  model            String   @default("gpt-4o")
-  imagePrompt      String?  @db.Text
-  promptVersion    String?
-  generatorVersion String?
-  createdAt        DateTime @default(now())
-
-  @@map("ai_drafts")
-}
-
-model SocialPost {
-  id             String           @id @default(cuid())
-  articleId      String
-  article        Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  platform       SocialPlatform
-  content        String           @db.Text
-  status         SocialPostStatus @default(DRAFT)
-  scheduledAt    DateTime?
-  publishedAt    DateTime?
-  externalPostId String?
-  errorMessage   String?          @db.Text
-  createdAt      DateTime         @default(now())
-  performance      PostPerformance?
-  scheduledPost    ScheduledPost?
-  publishQueueItem PublishQueueItem?
-
-  @@map("social_posts")
-}
-
-model Approval {
-  id         String         @id @default(cuid())
-  articleId  String
-  article    Article        @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  reviewerId String
-  reviewer   User           @relation(fields: [reviewerId], references: [id])
-  action     ApprovalAction
-  note       String?
-  createdAt  DateTime       @default(now())
-
-  @@map("approvals")
-}
-
-model RssSource {
-  id                  String              @id @default(cuid())
-  name                String
-  url                 String              @unique
-  categoryId          String
-  category            Category            @relation(fields: [categoryId], references: [id])
-  enabled             Boolean             @default(true)
-  allowAutoGeneration Boolean             @default(false)
-  language            String              @default("EN")
-  country             String              @default("GLOBAL")
-  reliabilityScore    Int                 @default(70)
-  feedSourceType      String              @default("NEWS")
-  lastFetchedAt       DateTime?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  articles            DiscoveredArticle[]
-
-  @@map("rss_sources")
-}
-
-model EvergreenAutomationSettings {
-  id                 String   @id @default(cuid())
-  isEnabled          Boolean  @default(false)
-  allowedHours       Int[]    @default([9, 20])
-  targetDraftCount   Int      @default(3)
-  articlesPerRun     Int      @default(2)
-  dailyAiBudgetLimit Float    @default(2.0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@map("evergreen_automation_settings")
-}
-
-model NewsAutomationSettings {
-  id                     String   @id @default(cuid())
-  rssScanIntervalMinutes Int      @default(60)
-  maxNewsPerDay          Int      @default(6)
-  publishMode            String   @default("DRAFT")
-  facebookAutoPost       Boolean  @default(false)
-  allowedPublishHours    Int[]    @default([10, 13, 15, 18, 21, 23])
-  minimumImportanceScore Int      @default(7)
-  compoundScoreThreshold Int      @default(45)
-  dailyAiBudgetLimit     Float    @default(0.80)
-  isEnabled              Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  @@map("news_automation_settings")
-}
-
-model CategoryImageSettings {
-  id            String   @id @default(cuid())
-  categoryId    String   @unique
-  imageMode     String   @default("TEMPLATE")
-  templateColor String   @default("#6366f1")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@map("category_image_settings")
-}
-
-model DiscoveredArticle {
-  id             String           @id @default(cuid())
-  sourceId       String
-  source         RssSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  title          String
-  url            String           @unique
-  excerpt        String?          @db.Text
-  publishedAt    DateTime?
-  categoryId     String
-  category       Category         @relation(fields: [categoryId], references: [id])
-  status         DiscoveredStatus @default(NEW)
-  imageUrl       String?
-  localScore     Int?
-  filteredReason String?
-  // ── Semantic filter fields ─────────────────────────────────────────────────
-  semanticScore             Int?
-  matchedKeywords           Json?
-  semanticCategory          String?
-  semanticSecondaryCategory String?
-  passedSemanticFilter      Boolean  @default(false)
-  // ── Compound scoring fields ────────────────────────────────────────────────
-  compoundScore         Float?
-  compoundReason        String?
-  selectedForGeneration Boolean  @default(false)
-  // ── Article extraction ────────────────────────────────────────────────────
-  sourceArticleBody   String?  @db.Text
-  extractionSuccess   Boolean?
-  extractionMethod    String?
-  extractionWordCount Int?
-  // ──────────────────────────────────────────────────────────────────────────
-  clusterId      String?
-  cluster        TrendCluster?    @relation(fields: [clusterId], references: [id], onDelete: SetNull)
-  clusterPrimary Boolean          @default(false)
-  // ── Human review labels (for classifier training data) ────────────────────
-  humanVerdict     String?   // 'accepted' | 'rejected'
-  humanVerdictAt   DateTime?
-  humanVerdictNote String?
-  // ──────────────────────────────────────────────────────────────────────────
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  score          ContentScore?
-
-  @@map("discovered_articles")
-}
-
-model ContentScore {
-  id                   String            @id @default(cuid())
-  discoveredArticleId  String            @unique
-  discoveredArticle    DiscoveredArticle @relation(fields: [discoveredArticleId], references: [id], onDelete: Cascade)
-  greekInterestScore   Int               @default(0)
-  searchPotentialScore Int               @default(0)
-  facebookClickScore   Int               @default(0)
-  evergreenScore       Int               @default(0)
-  overallScore         Int               @default(0)
-  rejected             Boolean           @default(false)
-  rejectReason         String?           @db.Text
-  reasoning            String?           @db.Text
-  scoredAt             DateTime          @default(now())
-
-  @@map("content_scores")
-}
-
-model TrendCluster {
-  id           String              @id @default(cuid())
-  topic        String
-  trendScore   Int                 @default(0)
-  articleCount Int                 @default(0)
-  sourceCount  Int                 @default(0)
-  firstSeenAt  DateTime            @default(now())
-  lastSeenAt   DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  articles     DiscoveredArticle[]
-
-  @@map("trend_clusters")
-}
-
-model PostPerformance {
-  id                 String     @id @default(cuid())
-  socialPostId       String     @unique
-  socialPost         SocialPost @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
-  predictedReach     Int        @default(0)
-  predictedComments  Int        @default(0)
-  predictedShares    Int        @default(0)
-  actualReach        Int        @default(0)
-  actualComments     Int        @default(0)
-  actualShares       Int        @default(0)
-  actualReactions    Int        @default(0)
-  predictionAccuracy Int?
-  learningWeight     Float      @default(1.0)
-  lastSyncedAt       DateTime?
-  createdAt          DateTime   @default(now())
-
-  @@map("post_performances")
-}
-
-model TopicPerformance {
-  id               String   @id @default(cuid())
-  topic            String   @unique
-  category         String   @default("")
-  avgReach         Float    @default(0)
-  avgComments      Float    @default(0)
-  avgShares        Float    @default(0)
-  avgReactions     Float    @default(0)
-  avgDiscussionScore Float  @default(0)
-  avgFacebookScore Float    @default(0)
-  articleCount     Int      @default(0)
-  performanceScore Float    @default(0)
-  updatedAt        DateTime @updatedAt
-  createdAt        DateTime @default(now())
-
-  @@map("topic_performances")
-}
-
-model EvergreenOpportunity {
-  id             String   @id @default(cuid())
-  topic          String
-  primaryKeyword String
-  articleType    String   @default("guide")
-  category       String   @default("")
-  seoScore       Int      @default(0)
-  businessValue  Int      @default(0)
-  difficulty     Int      @default(50)
-  evergreenValue Int      @default(0)
-  fbReusability  Int      @default(0)
-  overallScore   Int      @default(0)
-  clusterTopics  String[] @default([])
-  status         String   @default("new")
-  reasoning      String?  @db.Text
-  generatedAt    DateTime @default(now())
-
-  @@map("evergreen_opportunities")
-}
-
-model ScheduledPost {
-  id           String              @id @default(cuid())
-  articleId    String
-  article      Article             @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  socialPostId String              @unique
-  socialPost   SocialPost          @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
-  platform     SocialPlatform
-  scheduledFor DateTime
-  status       ScheduledPostStatus @default(PENDING)
-  publishedAt  DateTime?
-  errorMessage String?             @db.Text
-  createdAt    DateTime            @default(now())
-
-  @@map("scheduled_posts")
-}
-
-model PublishQueueItem {
-  id            String          @id @default(cuid())
-  articleId     String
-  article       Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  socialPostId  String?         @unique
-  socialPost    SocialPost?     @relation(fields: [socialPostId], references: [id], onDelete: SetNull)
-  queuePosition Int             @default(0)
-  priority      Int             @default(1)
-  scheduledFor  DateTime?
-  status        QueueItemStatus @default(QUEUED)
-  publishedAt   DateTime?
-  errorMessage  String?         @db.Text
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  @@map("publish_queue_items")
-}
-
-model SystemEvent {
-  id        String            @id @default(cuid())
-  service   String
-  type      String
-  status    SystemEventStatus
-  message   String            @db.Text
-  metadata  Json?
-  createdAt DateTime          @default(now())
-
-  @@index([createdAt(sort: Desc)])
-  @@index([service, status, createdAt(sort: Desc)])
-  @@index([status, createdAt(sort: Desc)])
-  @@map("system_events")
-}
-
-model SearchConsoleMetric {
-  id              String   @id @default(cuid())
+/// Tracks per-destination delivery of an Article to an external WordPress
+/// (or future) publishing site, so the integration pipeline never resends
+/// an article the destination already has. One row per (site, article).
+model WordpressDelivery {
+  id              String                  @id @default(cuid())
+  site            String
   articleId       String
-  article         Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  keyword         String
-  impressions     Int      @default(0)
-  clicks          Int      @default(0)
-  ctr             Float    @default(0)
-  averagePosition Float    @default(0)
-  date            DateTime @db.Date
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  article         Article                 @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  status          WordpressDeliveryStatus @default(SENT)
+  wordpressPostId Int?
+  wordpressUrl    String?
+  ackAt           DateTime?
+  ackError        String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
-  @@unique([articleId, keyword, date])
-  @@index([articleId])
-  @@index([keyword])
-  @@index([date(sort: Desc)])
-  @@map("search_console_metrics")
+  @@unique([site, articleId])
+  @@index([site, status, createdAt])
+  @@map("wordpress_deliveries")
 }
 
-model KeywordOpportunity {
-  id              String   @id @default(cuid())
-  keyword         String   @unique
-  impressions     Int      @default(0)
-  clicks          Int      @default(0)
-  ctr             Float    @default(0)
-  avgPosition     Float    @default(0)
-  clusterSlug     String?
-  topicSuggestion String?
-  status          String   @default("new")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([status])
-  @@index([clusterSlug])
-  @@map("keyword_opportunities")
+enum WordpressDeliveryStatus {
+  SENT
+  PUBLISHED
+  FAILED
 }
 
-// ─── Image Library ─────────────────────────────────────────────────────────────
+/// Database-backed mutex so runNewsPipeline() cannot execute concurrently
+/// from two different callers (Vercel cron + a WordPress-triggered request,
+/// or two overlapping WordPress requests) across separate serverless
+/// invocations, where an in-memory lock would not be shared. Single
+/// singleton row (id: "news-auto-pipeline"), claimed via an atomic
+/// conditional update and self-healing via lockedAt TTL if a process
+/// crashes without releasing it.
+model PipelineLock {
+  id       String    @id
+  lockedAt DateTime?
 
-model ImageCategory {
-  id           String                @id @default(cuid())
-  name         String
-  slug         String                @unique
-  description  String?
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
-  tags         ImageTag[]
-  collections  ImageCollection[]
-  assets       ImageAsset[]
-  defaultImage ImageCategoryDefault?
-
-  @@map("image_categories")
+  @@map("pipeline_locks")
 }
 
-model ImageTag {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String
-  categoryId  String
-  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  /** JSON array of { keyword, aliases, isPriority } — keyword templates applied to all images with this tag */
-  keywords    Json          @default("[]")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  assets      ImageAsset[]
-  semanticTag SemanticTag?
-
-  @@unique([slug, categoryId])
-  @@map("image_tags")
-}
-
-model ImageCollection {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String
-  categoryId  String
-  category    ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  description String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  assets      ImageAsset[]
-
-  @@unique([slug, categoryId])
-  @@map("image_collections")
-}
-
-model ImageAsset {
-  id               String             @id @default(cuid())
-  categoryId       String
-  category         ImageCategory      @relation(fields: [categoryId], references: [id])
-  tagId            String?
-  tag              ImageTag?          @relation(fields: [tagId], references: [id])
-  collectionId     String?
-  collection       ImageCollection?   @relation(fields: [collectionId], references: [id], onDelete: SetNull)
-  pexelsId         Int?               @unique
-  localPath        String
-  publicUrl        String
-  originalUrl      String?
-  photographer     String?
-  photographerUrl  String?
-  pexelsUrl        String?
-  uploadSource     String             @default("pexels")
-  width            Int
-  height           Int
-  altText          String
-  description      String?
-  qualityScore     Int                @default(5)
-  seasonStart      String?
-  seasonEnd        String?
-  theme            String             @default("global")
-  usedCount        Int                @default(0)
-  lastUsedAt       DateTime?
-  isActive         Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  usages           ArticleImageUsage[]
-  keywords         ImageKeyword[]
-  performance      ImagePerformance?
-  categoryDefaults ImageCategoryDefault[]
-
-  @@index([categoryId, isActive, theme])
-  @@index([tagId])
-  @@index([collectionId])
-  @@map("image_assets")
-}
-
-model ImageKeyword {
-  id           String     @id @default(cuid())
-  imageAssetId String
-  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
-  keyword      String
-  aliases      Json       @default("[]")
-  isPriority   Boolean    @default(false)
-  isOverride   Boolean    @default(false)
-  createdAt    DateTime   @default(now())
-
-  @@unique([imageAssetId, keyword])
-  @@index([imageAssetId])
-  @@map("image_keywords")
-}
-
-model ImagePerformance {
-  id             String     @id @default(cuid())
-  imageAssetId   String     @unique
-  imageAsset     ImageAsset @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
-  totalArticles  Int        @default(0)
-  totalViews     Int        @default(0)
-  totalClicks    Int        @default(0)
-  avgCtr         Float?
-  avgReadingTime Float?
-  avgScrollDepth Float?
-  lastSyncedAt   DateTime?
-  updatedAt      DateTime   @updatedAt
-
-  @@map("image_performance")
-}
-
-model ImageCategoryDefault {
-  id           String        @id @default(cuid())
-  categoryId   String        @unique
-  category     ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  imageAssetId String
-  imageAsset   ImageAsset    @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
-
-  @@map("image_category_defaults")
-}
-
-model ImageSelectionSettings {
-  id                     String   @id @default(cuid())
-  categoryWeight         Float    @default(40)
-  subcategoryWeight      Float    @default(30)
-  priorityKeywordWeight  Float    @default(25)
-  keywordWeight          Float    @default(10)
-  exactPhraseWeight      Float    @default(15)
-  multiKeyword2Bonus     Float    @default(10)
-  multiKeyword3Bonus     Float    @default(20)
-  qualityScoreWeight     Float    @default(1)
-  overrideBonus          Float    @default(1000)
-  recentUsage1dPenalty   Float    @default(-15)
-  recentUsage3dPenalty   Float    @default(-10)
-  recentUsage7dPenalty   Float    @default(-5)
-  usageCountPenalty      Float    @default(-1)
-  usageCountCap          Float    @default(-20)
-  updatedAt              DateTime @updatedAt
-
-  @@map("image_selection_settings")
-}
-
-model ArticleImageUsage {
-  id           String     @id @default(cuid())
-  articleId    String
-  imageAssetId String
-  imageAsset   ImageAsset @relation(fields: [imageAssetId], references: [id])
-  createdAt    DateTime   @default(now())
-
-  @@index([articleId])
-  @@map("article_image_usages")
-}
-
-// ─── Training Data ─────────────────────────────────────────────────────────────
-
-model TrainingExample {
-  id                  String           @id @default(cuid())
-  articleId           String           @unique
-  article             Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  // Optional link to the RSS article that triggered generation
-  discoveredArticleId String?
-
-  // Source material (the raw input that was fed to the model)
-  sourceTitle         String           @db.Text
-  sourceExcerpt       String?          @db.Text
-  sourceUrl           String?
-  sourceName          String?
-
-  // The prompt/completion pair (core training signal)
-  dataType            TrainingDataType
-  systemPrompt        String           @db.Text
-  userPrompt          String           @db.Text
-  aiCompletion        String           @db.Text  // full JSON string returned by GPT
-  model               String
-
-  // Structured extracted fields (for easy filtering/searching)
-  generatedTitle      String
-  generatedExcerpt    String           @db.Text
-  generatedTags       String[]
-  category            String?
-
-  // Version tracking
-  promptVersion       String?
-  generatorVersion    String?
-
-  // Semantic context
-  matchedKeywords     String[]         @default([])
-  semanticCategory    String?
-  compoundScore       Float?
-
-  // Quality signals (populated by human actions)
-  wasEdited           Boolean          @default(false)
-  wasPublished        Boolean          @default(false)
-  wasRejected         Boolean          @default(false)
-  humanRating         Int?             // 1-5, for future manual quality tagging
-
-  // Final state snapshot (taken at publish time)
-  finalTitle          String?
-  finalContent        String?          @db.Text
-
-  // Export control
-  includeInExport     Boolean          @default(true)
-
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-
-  @@index([dataType, createdAt(sort: Desc)])
-  @@index([wasPublished, createdAt(sort: Desc)])
-  @@map("training_examples")
-}
-
-model PipelineRun {
-  id                    String            @id @default(cuid())
-  status                PipelineRunStatus @default(RUNNING)
-  startedAt             DateTime          @default(now())
-  finishedAt            DateTime?
-  forceRun              Boolean           @default(false)
-
-  // Feed stats
-  totalFeeds            Int               @default(0)
-  failedFeeds           Int               @default(0)
-  fetchedItems          Int               @default(0)
-
-  // Filter funnel
-  skippedDuplicates     Int               @default(0)
-  localRejected         Int               @default(0)
-  semanticRejected      Int               @default(0)
-  compoundRejected      Int               @default(0)
-  selectedForGeneration Int               @default(0)
-
-  // Generation results
-  generatedArticles     Int               @default(0)
-  failedGenerations     Int               @default(0)
-
-  // Context
-  modelUsed             String?
-  promptVersion         String?
-  generatorVersion      String?
-  compoundThreshold     Float?
-
-  // Outcome
-  reason                String?
-  errorMessage          String?           @db.Text
-
-  items                 PipelineRunItem[]
-  shadowResults         ShadowSemanticResult[]
-
-  @@index([startedAt(sort: Desc)])
-  @@map("pipeline_runs")
-}
-
-model PipelineRunItem {
-  id                    String       @id @default(cuid())
-  runId                 String
-  run                   PipelineRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-
-  sourceName            String
-  rssTitle              String       @db.Text
-  rssUrl                String
-
-  localScore            Float?
-  semanticScore         Float?
-  compoundScore         Float?
-  semanticCategory      String?
-  matchedKeywords       String[]     @default([])
-  resolvedCategory      String?
-  semanticBreakdown     Json?
-  extractionStatus      String?
-  extractionWordCount   Int?
-
-  selectedForGeneration Boolean      @default(false)
-  generatedArticleId    String?
-  generationStatus      String?
-  failureReason         String?      @db.Text
-
-  createdAt             DateTime     @default(now())
-
-  @@index([runId])
-  @@map("pipeline_run_items")
-}
-
-// ─── Semantic System ───────────────────────────────────────────────────────────
-
-/**
- * SemanticCategory: mirrors the 11 categories in semantic-matrix.json.
- * Optional link to an existing article Category (for pipeline category assignment).
- */
-model SemanticCategory {
-  id         String        @id @default(cuid())
-  name       String        @unique  // "Ελλάδα", "AI" etc.
-  slug       String        @unique  // "ellada", "ai" etc.
-  weight     Float         @default(1.0)
-  isActive   Boolean       @default(true)
-
-  // Optional 1-to-1 link to the public article Category
-  categoryId String?       @unique
-  category   Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-
-  tags       SemanticTag[]
-
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  @@map("semantic_categories")
-}
-
-/**
- * SemanticTag: canonical semantic concept (e.g. "Πυρκαγιά").
- * Matched via aliases. Contributes a single bounded score to its category.
- */
-model SemanticTag {
-  id                    String           @id @default(cuid())
-  name                  String           @unique  // "Πυρκαγιά"
-  slug                  String           @unique  // "pyrkagia"
-  semanticCategoryId    String
-  semanticCategory      SemanticCategory @relation(fields: [semanticCategoryId], references: [id])
-
-  weight                Float            @default(1.0)
-  // Points added when this tag matches AND isPriority is true
-  bonus                 Int              @default(0)
-  isPriority            Boolean          @default(false)
-  isActive              Boolean          @default(true)
-
-  // Controls what downstream systems use this tag for
-  useForArticleTagging  Boolean          @default(true)
-  useForImageMatching   Boolean          @default(true)
-  useForRelatedArticles Boolean          @default(false)
-
-  // Optional 1-to-1 mapping to existing article Tag
-  tagId                 String?          @unique
-  tag                   Tag?             @relation(fields: [tagId], references: [id], onDelete: SetNull)
-
-  // Optional 1-to-1 mapping to existing ImageTag
-  imageTagId            String?          @unique
-  imageTag              ImageTag?        @relation(fields: [imageTagId], references: [id], onDelete: SetNull)
-
-  aliases               SemanticTagAlias[]
-
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  @@index([semanticCategoryId, isActive])
-  @@map("semantic_tags")
-}
-
-/**
- * SemanticTagAlias: a surface form (e.g. "φωτιά", "112", "εκκένωση")
- * that maps to a canonical SemanticTag.
- */
-model SemanticTagAlias {
-  id            String      @id @default(cuid())
-  semanticTagId String
-  semanticTag   SemanticTag @relation(fields: [semanticTagId], references: [id], onDelete: Cascade)
-
-  alias         String
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-
-  @@unique([semanticTagId, alias])
-  @@index([alias])  // fast lookup: given alias text, find its tag
-  @@map("semantic_tag_aliases")
-}
-
-/**
- * Versioned snapshots of the full semantic configuration.
- * Created automatically on each import or significant change.
- */
-model SemanticConfigVersion {
-  id          String   @id @default(cuid())
-  version     Int      @unique
-  description String?
-  snapshot    Json     // full config at time of snapshot
-  isActive    Boolean  @default(false)
-  createdBy   String?  // admin user id or "import"
-  createdAt   DateTime @default(now())
-
-  @@index([createdAt(sort: Desc)])
-  @@map("semantic_config_versions")
-}
-
-/**
- * Audit trail for all admin changes to the semantic system.
- */
-// ─── Shadow Semantic Mode ─────────────────────────────────────────────────────
-// One row per pipeline article scored by BOTH the OLD and NEW systems.
-// OLD system remains the production source of truth; this is read-only comparison.
-
-model ShadowSemanticResult {
-  id            String      @id @default(cuid())
-
-  pipelineRunId String
-  pipelineRun   PipelineRun @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
-
-  rssUrl        String
-  rssTitle      String      @db.Text
-
-  // OLD system (JSON-based, production)
-  oldCategory   String?
-  oldScore      Float
-  oldPassed     Boolean
-
-  // NEW system (DB-backed, shadow)
-  newCategory   String?
-  newScore      Int
-  newPassed     Boolean
-  newMatchedTags Json       // MatchedTag[] — tag name, category, score, aliases
-  zeroMatch     Boolean     // true if NEW matched no canonical tags at all
-
-  // Comparison flags
-  categoryAgree Boolean
-  passAgree     Boolean
-  disagreement  Boolean
-  disagreementReason String? @db.Text
-
-  createdAt     DateTime    @default(now())
-
-  @@index([pipelineRunId])
-  @@index([disagreement])
-  @@index([createdAt(sort: Desc)])
-  @@map("shadow_semantic_results")
-}
-
-// ─── Web Push ─────────────────────────────────────────────────────────────────
-
-model PushSubscription {
+/// Backs the async "start + poll" WordPress integration flow
+/// (POST /pipeline/start, GET /pipeline/[jobId]). Exists because the
+/// production domain sits behind Cloudflare's proxy, whose default read
+/// timeout (~100s) is well under the pipeline's worst-case duration — a
+/// single long-held synchronous HTTP request cannot be relied on to survive.
+/// This table lets a fast "start" request hand back a pollable id
+/// immediately while the real (unmodified) runWordPressPipeline() keeps
+/// running server-side via Next's after().
+model WordPressPipelineJob {
   id            String    @id @default(cuid())
-  endpoint      String    @unique
-  p256dh        String
-  auth          String
-  userAgent     String?
-  platform      String?
-  deviceType    String?
-  isActive      Boolean   @default(true)
-  isTestDevice  Boolean   @default(false)
-  failureCount  Int       @default(0)
-  lastSuccessAt DateTime?
-  lastFailureAt DateTime?
+  site          String
+  status        String    @default("processing") // processing | completed | failed
+  pipelineRunId String?
+  resultJson    Json?
+  error         String?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  finishedAt    DateTime?
 
-  @@index([isActive])
-  @@map("push_subscriptions")
-}
-
-model PushCampaign {
-  id            String             @id @default(cuid())
-  title         String
-  body          String
-  targetUrl     String
-  imageUrl      String?
-  articleId     String?
-  status        PushCampaignStatus @default(DRAFT)
-  totalTargeted Int                @default(0)
-  sentCount     Int                @default(0)
-  failedCount   Int                @default(0)
-  clickedCount  Int                @default(0)
-  createdAt     DateTime           @default(now())
-  startedAt     DateTime?
-  completedAt   DateTime?
-  updatedAt     DateTime           @updatedAt
-
-  @@index([status])
-  @@index([createdAt(sort: Desc)])
-  @@map("push_campaigns")
-}
-
-model SemanticAuditLog {
-  id         String   @id @default(cuid())
-  entityType String   // "SemanticCategory" | "SemanticTag" | "SemanticTagAlias"
-  entityId   String
-  action     String   // "create" | "update" | "deactivate" | "import"
-  before     Json?
-  after      Json?
-  userId     String?
-  createdAt  DateTime @default(now())
-
-  @@index([entityType, entityId])
-  @@index([createdAt(sort: Desc)])
-  @@map("semantic_audit_logs")
+  @@index([site, createdAt])
+  @@map("wordpress_pipeline_jobs")
 }

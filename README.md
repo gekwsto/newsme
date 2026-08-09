@@ -34,3 +34,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## WordPress integration
+
+NewsMe can act as a processing engine for external WordPress sites (e.g.
+OnlinePress) via `POST /api/integrations/wordpress/pipeline`. See
+[`docs/wordpress-integration.md`](docs/wordpress-integration.md) for the
+full architecture, API contract, and the `wordpress-plugin/onlinepress-autopipeline/`
+plugin.

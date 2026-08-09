@@ -14,6 +14,7 @@ import { selectFeaturedImage } from '@/lib/images/select-featured-image';
 import { downloadAndStoreImage } from '@/lib/images/download-and-store';
 import { pickDisplayAuthor } from '@/lib/authors/pick-display-author';
 import { runShadowBatch } from '@/lib/semantic-shadow';
+import { acquirePipelineLock, releasePipelineLock, startLockHeartbeat, NEWS_PIPELINE_LOCK_ID, LOCK_CONTENTION_REASON } from '@/lib/pipeline/pipeline-lock';
 
 const MODEL = 'gpt-5-mini';
 const FEED_TIMEOUT_MS = 12_000;
@@ -23,6 +24,10 @@ const PIPELINE_TIMEOUT_MS = 270_000; // 4.5 min — under Vercel's 5 min max
 const COMPOUND_LOCAL_WEIGHT = 0.4;
 const COMPOUND_SEMANTIC_WEIGHT = 0.6;
 const DEFAULT_COMPOUND_THRESHOLD = 45;
+
+// TTL gives headroom over the pipeline's own internal timeout so a crashed
+// process can't hold the lock forever (see src/lib/pipeline/pipeline-lock.ts).
+const PIPELINE_LOCK_TTL_MS = PIPELINE_TIMEOUT_MS + 30_000;
 
 function plog(step: string, data?: unknown) {
   console.log(`[news-pipeline] ${step}`, data ?? '');
@@ -101,15 +106,22 @@ export interface PipelineRunResult {
   error?: string;
   scoreStats?: ScoreStats;
   topCandidates?: CandidateSummary[];
+  /** The PipelineRun row this result came from — lets callers (e.g. the WordPress
+   *  integration) tie returned/generated Articles back to this specific run via
+   *  PipelineRunItem.runId, instead of guessing from timestamps. Absent only when
+   *  the pipeline never actually started (lock contention, or a hard timeout/fatal
+   *  error caught by the outer runNewsPipeline() wrapper). */
+  pipelineRunId?: string;
 }
 
-async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
+async function _runPipeline(forceRun = false, triggeredBySite?: string): Promise<PipelineRunResult> {
   const zero = { scannedFeeds: 0, failedFeeds: 0, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0 };
 
   const pipelineRun = await prisma.pipelineRun.create({
     data: {
       status: PipelineRunStatus.RUNNING,
       forceRun,
+      triggeredBySite: triggeredBySite ?? null,
       modelUsed: MODEL,
       promptVersion: PROMPT_VERSION,
       generatorVersion: GENERATOR_VERSION,
@@ -130,7 +142,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
   if (!settings) {
     plog('pipeline_skip', { reason: 'no_settings' });
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason: 'No settings configured' });
-    return { ok: true, ...zero, reason: 'No settings configured' };
+    return { ok: true, ...zero, reason: 'No settings configured', pipelineRunId: pipelineRun.id };
   }
   plog('settings_loaded', {
     isEnabled: settings.isEnabled,
@@ -142,7 +154,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
 
   if (!settings.isEnabled) {
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason: 'Pipeline disabled' });
-    return { ok: true, ...zero, reason: 'Pipeline disabled' };
+    return { ok: true, ...zero, reason: 'Pipeline disabled', pipelineRunId: pipelineRun.id };
   }
 
   if (!forceRun && !isAllowedHour(settings.allowedPublishHours)) {
@@ -153,7 +165,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
     plog('pipeline_skip', { reason: 'outside_hours', athensHour, allowed: settings.allowedPublishHours });
     const reason = `Outside allowed publish hours (now: ${athensHour}h Athens)`;
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason });
-    return { ok: true, ...zero, reason };
+    return { ok: true, ...zero, reason, pipelineRunId: pipelineRun.id };
   }
 
   const todayStart = new Date();
@@ -166,14 +178,14 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
     plog('pipeline_skip', { reason: 'daily_limit', todayCount, max: settings.maxNewsPerDay });
     const reason = `Daily limit reached (${todayCount}/${settings.maxNewsPerDay})`;
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason });
-    return { ok: true, ...zero, reason };
+    return { ok: true, ...zero, reason, pipelineRunId: pipelineRun.id };
   }
 
   const monthlyCosts = await getMonthlyAiCosts();
   if (monthlyCosts.news >= settings.dailyAiBudgetLimit * 30) {
     plog('pipeline_skip', { reason: 'budget_exceeded', monthly: monthlyCosts.news });
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason: 'Monthly AI budget exceeded' });
-    return { ok: true, ...zero, reason: 'Monthly AI budget exceeded' };
+    return { ok: true, ...zero, reason: 'Monthly AI budget exceeded', pipelineRunId: pipelineRun.id };
   }
 
   const remaining = settings.maxNewsPerDay - todayCount;
@@ -197,7 +209,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
 
   if (sources.length === 0) {
     await finishRun({ status: PipelineRunStatus.SKIPPED, reason: 'No auto-generation sources', totalFeeds: sources.length });
-    return { ok: true, ...zero, reason: 'No auto-generation sources' };
+    return { ok: true, ...zero, reason: 'No auto-generation sources', pipelineRunId: pipelineRun.id };
   }
 
   await prisma.pipelineRun.update({ where: { id: pipelineRun.id }, data: { totalFeeds: sources.length } }).catch(() => {});
@@ -254,7 +266,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
 
   if (allNewItems.length === 0) {
     await finishRun({ status: PipelineRunStatus.COMPLETED, reason: 'No new items from feeds', failedFeeds, fetchedItems: 0 });
-    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'No new items from feeds' };
+    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'No new items from feeds', pipelineRunId: pipelineRun.id };
   }
 
   // ── 3. Local rule-based filter ─────────────────────────────────────────────
@@ -307,7 +319,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
 
   if (semanticPassed.length === 0) {
     await finishRun({ status: PipelineRunStatus.COMPLETED, reason: 'All items filtered out by semantic filter', semanticRejected });
-    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'All items filtered out by semantic filter' };
+    return { ok: true, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0, reason: 'All items filtered out by semantic filter', pipelineRunId: pipelineRun.id };
   }
 
   // ── 4. Compound rule-based scoring (NO AI) ────────────────────────────────
@@ -432,6 +444,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
       reason: `No items passed compound score threshold (${compoundThreshold})`,
       scoreStats,
       topCandidates,
+      pipelineRunId: pipelineRun.id,
     };
   }
 
@@ -476,7 +489,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
 
   const adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
   if (!adminUser) {
-    return { ok: false, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: compoundScored.length, generated: 0, rejected, facebookPosted: 0, error: 'No admin user found' };
+    return { ok: false, scannedFeeds: sources.length, failedFeeds, rssItems: allNewItems.length, candidates: compoundScored.length, generated: 0, rejected, facebookPosted: 0, error: 'No admin user found', pipelineRunId: pipelineRun.id };
   }
 
   let articlesGenerated = 0;
@@ -832,6 +845,7 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
     facebookPosted,
     scoreStats,
     topCandidates,
+    pipelineRunId: pipelineRun.id,
   };
 
   const donePayload = { ...result, totalActiveFeeds, autoGenerationFeeds };
@@ -847,8 +861,38 @@ async function _runPipeline(forceRun = false): Promise<PipelineRunResult> {
   return result;
 }
 
-export async function runNewsPipeline(forceRun = false): Promise<PipelineRunResult> {
+export async function runNewsPipeline(forceRun = false, triggeredBySite?: string): Promise<PipelineRunResult> {
   const zero = { scannedFeeds: 0, failedFeeds: 0, rssItems: 0, candidates: 0, generated: 0, rejected: 0, facebookPosted: 0 };
+
+  const acquired = await acquirePipelineLock(NEWS_PIPELINE_LOCK_ID, PIPELINE_LOCK_TTL_MS);
+  if (!acquired) {
+    plog('pipeline_skip', { reason: 'lock_held' });
+    return { ok: true, ...zero, reason: LOCK_CONTENTION_REASON };
+  }
+
+  // Heartbeat renews the lease every ~60s (TTL/5) while _runPipeline is
+  // genuinely still running, so the lock never goes stale purely because
+  // total execution time exceeds the TTL — it only expires if heartbeats
+  // actually stop (crash / hard platform kill), which is the real
+  // crash-recovery case. See src/lib/pipeline/pipeline-lock.ts.
+  const stopHeartbeat = startLockHeartbeat(NEWS_PIPELINE_LOCK_ID, PIPELINE_LOCK_TTL_MS);
+
+  // Release only once _runPipeline itself actually settles — NOT when the
+  // timeout race below resolves first. Promise.race doesn't cancel the
+  // loser, so _runPipeline can keep running in the background past the
+  // synthetic timeout; releasing the lock at that point would let a second
+  // caller start a truly concurrent run while the first is still executing.
+  const pipelinePromise = _runPipeline(forceRun, triggeredBySite)
+    .catch((err): PipelineRunResult => {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      plog('pipeline_fatal', { error: msg });
+      void logEvent({ service: SERVICE.SCHEDULER, type: 'news_pipeline_run', status: 'ERROR', message: `Pipeline fatal: ${msg}` });
+      return { ok: false, ...zero, error: msg };
+    })
+    .finally(() => {
+      stopHeartbeat();
+      void releasePipelineLock(NEWS_PIPELINE_LOCK_ID);
+    });
 
   const timeout = new Promise<PipelineRunResult>((resolve) =>
     setTimeout(() => {
@@ -857,10 +901,5 @@ export async function runNewsPipeline(forceRun = false): Promise<PipelineRunResu
     }, PIPELINE_TIMEOUT_MS)
   );
 
-  return Promise.race([_runPipeline(forceRun), timeout]).catch(async (err) => {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    plog('pipeline_fatal', { error: msg });
-    void logEvent({ service: SERVICE.SCHEDULER, type: 'news_pipeline_run', status: 'ERROR', message: `Pipeline fatal: ${msg}` });
-    return { ok: false, ...zero, error: msg };
-  });
+  return Promise.race([pipelinePromise, timeout]);
 }

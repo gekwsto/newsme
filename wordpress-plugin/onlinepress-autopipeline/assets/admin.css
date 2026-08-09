@@ -1,0 +1,17 @@
+.onlinepress-autopipeline-wrap .op-tab-panel {
+	margin-top: 20px;
+}
+
+.onlinepress-autopipeline-wrap #op-run-now-result {
+	margin-top: 12px;
+	max-width: 600px;
+}
+
+.onlinepress-autopipeline-wrap .spinner {
+	visibility: hidden;
+	margin-left: 8px;
+}
+
+.onlinepress-autopipeline-wrap .spinner.is-active {
+	visibility: visible;
+}
